@@ -1,0 +1,511 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+#profile-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    z-index: 100;
+}
+
+#profile-picture {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #0ff;
+    margin-right: 15px;
+}
+
+#nickname {
+    font-size: 1.5rem;
+    color: #fff;
+    text-shadow: 0 0 5px #0ff;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+}
+
+#bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+#menu-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+}
+
+h1 {
+    font-size: 4rem;
+    color: #0ff;
+    text-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 30px #0ff;
+    margin-bottom: 40px;
+}
+
+/* --- General Button Styles --- */
+.btn {
+    background: transparent;
+    border: 2px solid #0ff;
+    color: #0ff;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 15px;
+    text-align: center;
+}
+
+.btn:hover {
+    background: #0ff;
+    color: #000;
+    box-shadow: 0 0 20px #0ff;
+}
+
+/* --- Button Variations --- */
+.btn-primary {
+    display: block;
+    width: 250px;
+    font-size: 1.2rem;
+    margin: 15px auto;
+}
+
+.btn-secondary {
+    width: 150px;
+    font-size: 1rem;
+    margin: 5px auto;
+    padding: 10px;
+}
+
+.btn-tertiary {
+    width: 150px;
+    font-size: 1.2rem;
+    padding: 10px;
+    margin-left: 15px;
+}
+
+.btn-small {
+    width: 125px;
+    height: 35px;
+    padding: 0;
+    line-height: 35px;
+    font-size: 1rem;
+    margin-top: 20px;
+}
+
+.btn-full-width {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.btn-auto-width {
+    width: auto;
+    padding: 10px 20px;
+    margin: 5px 0;
+    font-size: 1rem;
+}
+
+.btn-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+}
+
+.btn-kick {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: transparent;
+    border: none;
+    color: #f00;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    width: auto;
+    height: auto;
+}
+
+.btn-kick:hover {
+    color: #fff;
+    background: #f00;
+    box-shadow: none;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.multi-button-wrapper {
+    position: relative;
+    display: block; /* Changed from inline-block to block */
+}
+
+#multiplayer-options {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 20px); /* Position to the right of the multi button */
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 1px solid #0ff;
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap; /* Prevent text wrapping */
+    z-index: 10;
+}
+
+/* Create Room Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100; /* Above other elements */
+}
+
+.modal-content {
+    background-color: #1a1a1a;
+    padding: 30px;
+    border-radius: 10px;
+    border: 2px solid #0ff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    width: 400px; /* Fixed width for the modal */
+    max-width: 90%;
+    max-height: 90vh; /* Added: Max height for modal content */
+    overflow-y: auto; /* Added: Enable vertical scrolling if content overflows */
+    color: #fff;
+    text-align: left;
+    box-sizing: border-box; /* Added: Include padding and border in element's total width and height */
+    position: relative; /* For absolute positioning of close button */
+}
+
+.modal-content h2 {
+    text-align: center;
+    color: #0ff;
+    margin-bottom: 20px;
+    font-size: 2rem;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ccc;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"] {
+    width: calc(100% - 20px); /* Account for padding */
+    padding: 10px;
+    background-color: #333;
+    border: 1px solid #0ff;
+    color: #fff;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.form-group input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.game-mode-selection label {
+    display: inline-block;
+    margin-right: 20px;
+}
+
+.map-selection-wrapper {
+    position: relative;
+    display: flex; /* To align button and options */
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+#map-options {
+    position: fixed; /* Changed back to fixed */
+    /* top and left will be set by JavaScript */
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 1px solid #0ff;
+    padding: 15px;
+    border-radius: 5px;
+    /* Removed max-height, overflow-y, overflow-x */
+    display: grid; /* Changed to grid */
+    grid-template-columns: repeat(3, 1fr); /* 3 columns */
+    gap: 10px; /* Gap between items */
+    z-index: 110; /* Above modal content */
+    width: 360px; /* Adjusted width for 3 columns (80px*3 + 10px*2 gaps + 15px*2 padding) */
+    box-sizing: border-box;
+}
+
+
+
+#selected-map-display {
+    margin-left: 15px;
+    color: #0ff;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.map-option-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 0; /* Removed margin-bottom as gap handles spacing */
+    border: 1px solid #0ff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #222;
+}
+
+.map-option-item:last-child {
+    margin-bottom: 0;
+}
+
+.map-option-item:hover {
+    background-color: #0ff;
+    color: #000;
+    box-shadow: 0 0 10px #0ff;
+}
+
+.map-preview-box {
+    width: 80px;
+    height: 80px;
+    background-color: #555; /* Placeholder for image */
+    border: 1px solid #444;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #ccc;
+}
+
+.map-name {
+    font-size: 0.9rem;
+    color: #fff;
+    margin: 0;
+}
+
+.map-option-item:hover .map-name {
+    color: #000;
+}
+
+
+
+
+
+/* Waiting Room Styles */
+#waiting-room-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 1000px;
+    background-color: rgba(0, 20, 40, 0.85);
+    border: 2px solid #0ff;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 0 30px #0ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.waiting-room-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #0aa;
+}
+
+#waiting-room-title {
+    font-size: 2.5rem;
+    color: #0ff;
+    text-shadow: 0 0 10px #0ff;
+}
+
+.room-status {
+    display: flex;
+    align-items: center;
+}
+
+.room-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+#waiting-room-map,
+#waiting-room-mode {
+    margin-bottom: 5px;
+}
+
+#waiting-room-private-indicator {
+    font-size: 1rem;
+    margin-right: 15px;
+    padding: 5px 10px;
+    background-color: #0ff;
+    color: #000;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+#room-settings-button {
+    background: transparent;
+    border: none;
+    color: #0ff;
+    font-size: 2rem;
+    cursor: pointer;
+}
+
+.player-list {
+    width: 100%;
+    display: grid;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.player-list.personal-layout {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.player-list.team-layout {
+    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+}
+
+.player-slot, .team-slot {
+    background-color: rgba(0, 50, 80, 0.7);
+    border: 1px solid #0aa;
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center content for empty slots */
+    position: relative;
+    min-height: 94px; /* Set a minimum height based on player card */
+}
+
+.team-slot {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    background-color: rgba(0, 50, 80, 0.7);
+    border: 1px solid #0aa;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.player-wrapper {
+    position: relative; /* This will be the reference for the kick button */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 30, 50, 0.8);
+    border-radius: 8px;
+    padding: 10px;
+    min-height: 74px; /* Adjust to match inner content height */
+}
+
+.team-slot .player-card.empty-slot {
+    width: 100%;
+}
+
+.player-card {
+    display: flex;
+    align-items: center;
+    width: 100%; /* Ensure player card takes full width */
+}
+
+.player-card.empty-slot {
+    justify-content: center;
+    color: #668;
+    font-style: italic;
+}
+
+.player-profile-pic {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid #0ff;
+    margin-right: 15px;
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-nickname {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.player-status {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+.player-status.ready {
+    color: #0f0;
+}
+
+#not-ready-modal .modal-content,
+#map-not-selected-modal .modal-content,
+#password-not-entered-modal .modal-content {
+    width: 300px;
+    text-align: center;
+}
+
+#not-ready-modal p,
+#map-not-selected-modal p,
+#password-not-entered-modal p {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
+#not-ready-ok-button,
+#map-not-selected-ok-button,
+#password-not-entered-ok-button {
+    width: 100px;
+    padding: 8px;
+    font-size: 1rem;
+}
