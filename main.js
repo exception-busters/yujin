@@ -372,8 +372,11 @@ function handleLeaveRoomClick() {
 }
 
 function handleStartButtonClick() {
-    if (isHost) {
+
+    const allReady = players.every(p => p.isHost || p.isReady);
+    if (allReady && isHost) {
         socket.emit('startGame', currentRoomId);
+        window.location.href = 'game.html';
     } else {
         alert('방장만 게임을 시작할 수 있습니다.');
     }
