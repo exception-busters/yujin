@@ -392,6 +392,10 @@ function handlePasswordNotEnteredOkClick() {
 }
 
 function handleRoomSettingsClick() {
+     if (!isHost) {
+        alert('방장만 방 설정을 수정할 수 있습니다.');
+        return;
+    }
     const modalTitle = createRoomModal.querySelector('h2');
     const finalButton = createRoomModal.querySelector('#create-room-final-button');
 
