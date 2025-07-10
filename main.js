@@ -357,7 +357,7 @@ function handleCloseCreateRoomModalClick() {
 }
 
 function handleReadyButtonClick() {
-    const isReady = readyButton.textContent === 'Ready'; // 현재 상태가 'Ready'이면 'Unready'로 변경할 예정이므로, 서버에는 true를 보냄
+    const isReady = readyButton.textContent !== 'Ready'; // 현재 상태가 'Ready'이면 'Unready'로 변경할 예정이므로, 서버에는 true를 보냄
     socket.emit('ready', { roomId: currentRoomId, isReady: !isReady }); // 현재 상태의 반대를 보냄
 }
 
