@@ -71,6 +71,30 @@
         </div>
     </div>
 
+    <!-- Join Room Modal -->
+    <div id="join-room-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="btn btn-close" id="close-join-room-modal">X</button>
+            <h2>Join Room</h2>
+            <div class="room-list-container">
+                <div id="room-list">
+                    <!-- Rooms will be dynamically loaded here -->
+                    <p class="no-rooms-message">No rooms available. Create one!</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="join-room-id">Room ID (Optional):</label>
+                <input type="text" id="join-room-id" placeholder="Enter Room ID">
+            </div>
+            <div class="form-group">
+                <label for="join-room-password">Password (if private):</label>
+                <input type="password" id="join-room-password" placeholder="Enter password">
+            </div>
+            <button id="refresh-room-list" class="btn btn-secondary">Refresh List</button>
+            <button id="join-selected-room-button" class="btn btn-full-width">Join Selected Room</button>
+        </div>
+    </div>
+
     <!-- Map Options moved outside modal again -->
     <div id="map-options" class="hidden">
         <!-- Placeholder for maps -->
@@ -144,6 +168,7 @@
     }
     </script>
 
+    <script type="module" src="https://cdn.socket.io/4.7.5/socket.io.esm.min.js"></script>
     <script type="module" src="main.js"></script>
 </body>
 </html>
