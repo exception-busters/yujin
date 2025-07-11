@@ -32,13 +32,13 @@ export default class Car {
     }
 
     init() {
-        this.loadModels();
-        this.setChassis();
-        this.setWheels();
-        this.controls();
+        return new Promise((resolve) => {
+            this.controls();
+            this.loadModels(resolve);
+        });
     }
 
-    loadModels() {
+    loadModels(resolve) {
         const gltfLoader = new GLTFLoader();
         const dracoLoader = new DRACOLoader();
 
@@ -56,8 +56,18 @@ export default class Car {
                     object.material = new THREE.MeshToonMaterial({color: 0xFF55BB})
                 }
             })
+
+            // Add AxesHelper to the chassis
+            const axesHelper = new THREE.AxesHelper(5); // Size of the axes
+            this.chassis.add(axesHelper);
         
             this.scene.add(this.chassis);
+
+            // Now that chassis model is loaded, set up physics body and wheels
+            this.setChassis();
+            this.setWheels();
+
+            resolve(); // Resolve the promise when chassis is loaded and physics body is set
         })
 
         this.wheels = [];
@@ -247,7 +257,7 @@ export default class Car {
         }
     }
 
-    update() {
+    update(camera) {
         const updateWorld = () => {
             if (!this.isControllable) return;
             // Ensure Car1 model is loaded
@@ -258,6 +268,21 @@ export default class Car {
                     this.car.chassisBody.position.z + this.chassisModelPos.z
                 );
                 this.chassis.quaternion.copy(this.car.chassisBody.quaternion);
+
+                // Update camera position to follow the car
+                const chassisPosition = this.chassis.position;
+                
+                // Offset in the car's local coordinate system
+                const cameraOffset = new THREE.Vector3(0, 5.5, -15); // Adjusted for car to appear lower on screen
+
+                // Apply the car's rotation to the offset
+                const worldOffset = cameraOffset.clone().applyQuaternion(this.chassis.quaternion);
+
+                // Add the rotated offset to the car's position
+                const cameraPosition = chassisPosition.clone().add(worldOffset);
+
+                camera.position.copy(cameraPosition);
+                camera.lookAt(chassisPosition);
             }
 
             // Ensure all wheel models are loaded and wheelInfos are available

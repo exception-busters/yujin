@@ -36,7 +36,7 @@ scene.add(camera)
 
 // Controls
 const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
+controls.enabled = false;
 
 /**
  * Renderer
@@ -69,17 +69,58 @@ world.broadphase = new CANNON.SAPBroadphase(world);
 //cannonDebugger(scene, world.bodies, {color: 0x00ff00})
 
 const car = new Car(scene, world);
-car.init();
-
 const countdownElement = document.getElementById('countdown');
+car.init().then(() => {
+    startCountdown();
+});
+
+function setCameraView(viewType) {
+    // Use car.chassis.position and quaternion if available, otherwise default to (0,0,0) and identity quaternion
+    const currentCarPosition = car.chassis ? car.chassis.position : new THREE.Vector3(0, 0, 0);
+    const currentCarQuaternion = car.chassis ? car.chassis.quaternion : new THREE.Quaternion();
+
+    let cameraPosition = new THREE.Vector3();
+    let lookAtTarget = currentCarPosition.clone();
+
+    switch (viewType) {
+        case 'front':
+            cameraPosition.set(currentCarPosition.x, currentCarPosition.y + 6, currentCarPosition.z + 12); // In front of the car
+            break;
+        case 'left':
+            cameraPosition.set(currentCarPosition.x - 7, currentCarPosition.y + 6, currentCarPosition.z + 5); // To the left of the car
+            break;
+        case 'right':
+            cameraPosition.set(currentCarPosition.x + 7, currentCarPosition.y + 6, currentCarPosition.z + 5); // To the right of the car
+            break;
+        case 'chase':
+            // Calculate chase camera position based on current car position and orientation
+            const cameraOffset = new THREE.Vector3(0, 5.5, -15); // This is the offset from car.js
+            const worldOffset = cameraOffset.clone().applyQuaternion(currentCarQuaternion);
+            cameraPosition = currentCarPosition.clone().add(worldOffset);
+            break;
+    }
+    camera.position.copy(cameraPosition);
+    camera.lookAt(lookAtTarget);
+}
 
 function startCountdown() {
     let count = 5;
     countdownElement.style.display = 'block';
+    car.isControllable = false; // Ensure car is not controllable during countdown
 
     const countdownInterval = setInterval(() => {
         if (count > 0) {
             countdownElement.innerText = count;
+            if (count === 5) {
+                setCameraView('front');
+            } else if (count === 4) {
+                setCameraView('left');
+            } else if (count === 3) {
+                setCameraView('right');
+            } else if (count === 2) {
+                // Switch to chase camera view
+                setCameraView('chase');
+            }
             count--;
         } else {
             clearInterval(countdownInterval);
@@ -88,8 +129,6 @@ function startCountdown() {
         }
     }, 1000);
 }
-
-startCountdown();
 
 const bodyMaterial = new CANNON.Material();
 const groundMaterial = new CANNON.Material();
@@ -186,7 +225,7 @@ const tick = () =>
     }
     lastCallTime = time
 
-    car.update();
+    car.update(camera);
 
     // Render
     renderer.render(scene, camera)

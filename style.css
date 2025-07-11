@@ -763,17 +763,6 @@ body, html {
     box-shadow: 0 0 15px #888;
 }
 
-#countdown {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 10rem;
-    color: white;
-    text-shadow: 0 0 20px black;
-    z-index: 1000;
-    display: none; /* Initially hidden */
-}
 
 #speedometer {
     position: absolute;
@@ -901,4 +890,65 @@ body, html {
     font-family: 'Orbitron', sans-serif;
 }
 
-/*6e1ea4cb8acdbcc3319f632f01484baf1793007c*/
+.webgl {
+    position: fixed;
+    top: 0;
+    left: 0;
+    outline: none;
+}
+
+/* In-Game UI Overlay Styles */
+.ingame-ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allow interaction with the game canvas */
+}
+
+.ui-panel {
+    position: absolute;
+    background-color: rgba(0, 20, 40, 0.75);
+    border: 2px solid #0ff;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+}
+
+.rank-panel {
+    top: 50%;
+    left: 20px;
+    width: 200px;
+    height: 600px; /* Made taller */
+    transform: translateY(-50%);
+}
+
+.lap-counter {
+    top: 20px;
+    right: 20px;
+    width: 150px;
+    height: 80px;
+}
+
+.minimap {
+    top: 40%; /* Moved down slightly */
+    right: 20px;
+    width: 300px; /* Made larger */
+    height: 250px; /* Made larger */
+    background-color: rgba(128, 128, 128, 0.5); /* Semi-transparent gray */
+    border: none; /* No border */
+    box-shadow: none; /* No shadow */
+}
+
+.gauges-panel {
+    bottom: 20px;
+    right: 20px;
+    width: 350px; /* Made larger */
+    height: 150px; /* Made larger */
+}
