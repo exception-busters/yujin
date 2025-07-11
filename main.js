@@ -29,10 +29,21 @@ const notReadyOkButton = document.getElementById('not-ready-ok-button');
 const roomSettingsButton = document.getElementById('room-settings-button');
 const mapNotSelectedModal = document.getElementById('map-not-selected-modal');
 const mapNotSelectedOkButton = document.getElementById('map-not-selected-ok-button');
+const passwordNotEnteredModal = document.getElementById('password-not-entered-modal');
+
 const waitingRoomMap = document.getElementById('waiting-room-map');
 const waitingRoomMode = document.getElementById('waiting-room-mode');
-const passwordNotEnteredModal = document.getElementById('password-not-entered-modal');
 const passwordNotEnteredOkButton = document.getElementById('password-not-entered-ok-button');
+const incorrectPasswordModal = document.getElementById('incorrect-password-modal');
+const incorrectPasswordOkButton = document.getElementById('incorrect-password-ok-button');
+
+// Private Room Password Modal Elements
+const privateRoomPasswordModal = document.getElementById('private-room-password-modal');
+const closePrivateRoomPasswordModalButton = document.getElementById('close-private-room-password-modal');
+const privateRoomPasswordInput = document.getElementById('private-room-password-input');
+const privateRoomPasswordOkButton = document.getElementById('private-room-password-ok-button');
+
+const currentMenuTitle = document.getElementById('current-menu-title');
 
 // Join Room Modal Elements
 const joinRoomModal = document.getElementById('join-room-modal');
@@ -48,6 +59,9 @@ let isHost = false;
 let players = []; // Array to store player data
 let currentRoomId = null; // 현재 접속 중인 방 ID
 let selectedRoomId = null; // 선택된 방 ID
+let isEditingRoomSettings = false; // 방 설정 수정 중인지 여부를 나타내는 플래그
+let currentRoom = null; // 현재 접속 중인 방의 전체 정보
+let availableRooms = {}; // 서버로부터 받은 방 목록을 저장
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', initializeGame);
@@ -57,6 +71,8 @@ function initializeGame() {
     setupThreeJSScene();
     setupEventListeners();
     selectedMapDisplay.textContent = 'No map selected'; // Initialize map display
+    resizeGameViewport(); // Initial resize
+    window.addEventListener('resize', resizeGameViewport); // Add resize listener
 }
 
 function generateRandomNickname() {
@@ -168,6 +184,32 @@ function setupEventListeners() {
     joinSelectedRoomButton.addEventListener('click', handleJoinSelectedRoomClick);
     roomListContainer.addEventListener('click', handleRoomListItemClick); // Event delegation for selecting rooms
     roomListContainer.addEventListener('dblclick', handleRoomListItemDoubleClick); // Event delegation for double click to join
+
+    // Incorrect Password Modal
+    incorrectPasswordOkButton.addEventListener('click', () => {
+        incorrectPasswordModal.classList.add('hidden');
+    });
+
+    // Private Room Password Modal
+    closePrivateRoomPasswordModalButton.addEventListener('click', () => {
+        privateRoomPasswordModal.classList.add('hidden');
+        privateRoomPasswordInput.value = ''; // 입력 필드 초기화
+    });
+
+    privateRoomPasswordOkButton.addEventListener('click', () => {
+        const roomIdToJoin = selectedRoomId; // 더블클릭으로 선택된 방 ID 사용
+        const passwordToJoin = privateRoomPasswordInput.value.trim();
+        const nickname = nicknameElement.textContent;
+
+        if (!passwordToJoin) {
+            alert('비밀번호를 입력해주세요.'); // TODO: 모달로 변경
+            return;
+        }
+
+        socket.emit('joinRoom', { roomId: roomIdToJoin, password: passwordToJoin, nickname });
+        privateRoomPasswordModal.classList.add('hidden'); // 비밀번호 모달 닫기
+        privateRoomPasswordInput.value = ''; // 입력 필드 초기화
+    });
 }
 
 // --- Socket.IO Event Handlers ---
@@ -179,8 +221,7 @@ socket.on('roomCreated', (data) => {
 
 socket.on('roomUpdate', (room) => {
     console.log('Room updated:', room);
-    players = room.players; // 플레이어 목록 업데이트
-    renderPlayerList(room.mode); // 플레이어 목록 다시 렌더링
+    setupWaitingRoom(room); // 방 정보 업데이트 시 대기실 UI 전체 갱신
 
     // Ready 버튼 텍스트 업데이트
     const myPlayer = room.players.find(p => p.id === socket.id);
@@ -204,11 +245,16 @@ socket.on('roomJoined', (data) => {
     console.log('Room joined:', data);
     currentRoomId = data.roomId; // 방 ID 저장
     setupWaitingRoom(data.room);
+    joinRoomModal.classList.add('hidden'); // 방 참가 성공 시 Join Room 모달 닫기
 });
 
 socket.on('joinRoomError', (message) => {
     console.error('Join room error:', message);
-    alert(`방 참가 실패: ${message}`);
+    if (message === 'Incorrect password.') {
+        incorrectPasswordModal.classList.remove('hidden');
+    } else {
+        alert(`방 참가 실패: ${message}`);
+    }
 });
 
 socket.on('youWereKicked', (roomId) => {
@@ -236,6 +282,10 @@ socket.on('gameEnded', (roomId) => {
 
 socket.on('roomListUpdate', (updatedRooms) => {
     console.log('Room list updated:', updatedRooms);
+    availableRooms = updatedRooms.reduce((acc, room) => {
+        acc[room.id] = room;
+        return acc;
+    }, {});
     renderRoomList(updatedRooms);
 });
 
@@ -244,6 +294,8 @@ function handleStartGameClick() {
     console.log('Start Game button clicked');
     mainMenuButtons.classList.add('hidden');
     trainingMultiMenu.classList.remove('hidden');
+    currentMenuTitle.textContent = 'Start Game';
+    currentMenuTitle.classList.remove('hidden');
 }
 
 function handleTrainingClick() {
@@ -274,6 +326,7 @@ function handleJoinRoomClick() {
     console.log('Join Room button clicked');
     multiplayerOptions.classList.add('hidden');
     joinRoomModal.classList.remove('hidden');
+    joinRoomPasswordInput.value = ''; // 비밀번호 입력 필드 초기화
     socket.emit('listRooms'); // Request room list from server
 }
 
@@ -283,6 +336,8 @@ function handleBackToMainMenuClick() {
     mainMenuButtons.classList.remove('hidden');
     multiplayerOptions.classList.add('hidden'); // Hide multi options if open
     mapOptions.classList.add('hidden'); // Hide map options if open (shouldn't be, but for robustness)
+    currentMenuTitle.classList.add('hidden'); // 현재 탭 문구 숨기기
+    currentMenuTitle.textContent = ''; // 텍스트 초기화
 }
 
 function handlePrivateRoomChange() {
@@ -317,7 +372,11 @@ function handleDocumentClick(event) {
 }
 
 function handleCreateRoomFinalClick() {
-    const roomTitle = document.getElementById('room-title').value || 'My Room';
+    let roomTitle = document.getElementById('room-title').value || 'My Room';
+    // 한글 20자 제한 (UTF-8 기준)
+    if (roomTitle.length > 20) {
+        roomTitle = roomTitle.substring(0, 20);
+    }
     const isPrivate = document.getElementById('private-room-checkbox').checked;
     const gameMode = document.querySelector('input[name="game-mode"]:checked').value;
     const selectedMap = selectedMapDisplay.textContent;
@@ -334,8 +393,7 @@ function handleCreateRoomFinalClick() {
         return;
     }
 
-    // 서버에 방 생성 요청
-    socket.emit('createRoom', {
+    const roomData = {
         roomTitle,
         maxPlayers: 8, // 임시로 8명으로 설정
         isPrivate,
@@ -343,7 +401,16 @@ function handleCreateRoomFinalClick() {
         mode: gameMode,
         track: selectedMap,
         nickname
-    });
+    };
+
+    if (isEditingRoomSettings) {
+        // 방 설정 수정 모드일 경우
+        roomData.roomId = currentRoomId; // 현재 방 ID 추가
+        socket.emit('updateRoomSettings', roomData);
+    } else {
+        // 방 생성 모드일 경우
+        socket.emit('createRoom', roomData);
+    }
 
     // 모달 닫기
     createRoomModal.classList.add('hidden');
@@ -354,6 +421,7 @@ function handleCloseCreateRoomModalClick() {
     console.log('Close Create Room Modal button clicked');
     createRoomModal.classList.add('hidden');
     mapOptions.classList.add('hidden'); // Hide map options if open
+    isEditingRoomSettings = false; // 모달 닫을 때 플래그 초기화
 }
 
 function handleReadyButtonClick() {
@@ -401,11 +469,28 @@ function handleRoomSettingsClick() {
 
     modalTitle.textContent = 'Room Information';
     finalButton.textContent = 'Save Changes';
+    isEditingRoomSettings = true; // 방 설정 수정 모드 활성화
 
-    // Populate with current room settings
-    document.getElementById('room-title').value = document.getElementById('waiting-room-title').textContent;
-    document.getElementById('private-room-checkbox').checked = document.getElementById('waiting-room-private-indicator').style.display !== 'none';
-    // ... populate other settings like map, mode etc.
+    // Populate with current room settings from currentRoom object
+    document.getElementById('room-title').value = currentRoom.title;
+    document.getElementById('private-room-checkbox').checked = currentRoom.isPrivate;
+    document.getElementById('room-password').value = currentRoom.password || ''; // 비밀번호 필드 채우기
+    
+    // 현재 방의 맵과 게임 모드 정보 채우기
+    selectedMapDisplay.textContent = currentRoom.track;
+
+    if (currentRoom.mode === 'personal') {
+        document.getElementById('personal-match').checked = true;
+    } else if (currentRoom.mode === 'team') {
+        document.getElementById('team-match').checked = true;
+    }
+
+    // 비밀방 체크박스 상태에 따라 비밀번호 입력 필드 표시/숨김
+    if (currentRoom.isPrivate) {
+        passwordGroup.classList.remove('hidden');
+    } else {
+        passwordGroup.classList.add('hidden');
+    }
 
     createRoomModal.classList.remove('hidden');
 }
@@ -450,8 +535,16 @@ function handleRoomListItemDoubleClick(event) {
     const roomItem = event.target.closest('.room-item');
     if (roomItem) {
         selectedRoomId = roomItem.dataset.roomId;
-        joinRoomIdInput.value = selectedRoomId; // Populate Room ID input
-        handleJoinSelectedRoomClick(); // Attempt to join directly
+        const room = availableRooms[selectedRoomId];
+
+        if (room && room.isPrivate) {
+            // Private Room일 경우 비밀번호 입력 모달 띄우기
+            privateRoomPasswordModal.classList.remove('hidden');
+            privateRoomPasswordInput.focus(); // 입력 필드에 포커스
+        } else {
+            // Public Room이거나 선택된 방이 없는 경우 바로 입장 시도
+            handleJoinSelectedRoomClick();
+        }
     }
 }
 
@@ -466,7 +559,6 @@ function handleJoinSelectedRoomClick() {
     }
 
     socket.emit('joinRoom', { roomId: roomIdToJoin, password: passwordToJoin, nickname });
-    joinRoomModal.classList.add('hidden');
 }
 
 function renderRoomList(rooms) {
@@ -499,10 +591,14 @@ function renderRoomList(rooms) {
 
 // --- Utility Functions ---
 function setupWaitingRoom(room) {
+    currentRoom = room; // 현재 방 정보 저장
     isHost = (socket.id === room.hostId);
+
     document.getElementById('waiting-room-title').textContent = room.title;
+
     waitingRoomMap.textContent = `Map: ${room.track}`;
     waitingRoomMode.textContent = `Mode: ${room.mode === 'personal' ? 'Personal' : 'Team'}`;
+
     const privateIndicator = document.getElementById('waiting-room-private-indicator');
     privateIndicator.style.display = room.isPrivate ? 'block' : 'none';
 
@@ -520,15 +616,20 @@ function setupWaitingRoom(room) {
     if (isHost) {
         readyButton.classList.add('hidden');
         startButton.classList.remove('hidden');
+        roomSettingsButton.classList.remove('hidden');
     } else {
         readyButton.classList.remove('hidden');
         startButton.classList.add('hidden');
+        roomSettingsButton.classList.add('hidden');
     }
 
     // 대기실 UI 표시
     mainMenuButtons.classList.add('hidden');
     trainingMultiMenu.classList.add('hidden');
     waitingRoomContainer.classList.remove('hidden');
+
+    // 강제 리플로우 (브라우저 렌더링 강제)
+    void waitingRoomContainer.offsetWidth; // 이 라인은 아무것도 하지 않지만, 브라우저가 레이아웃을 다시 계산하도록 강제합니다.
 }
 
 function renderPlayerList(mode) {
@@ -596,4 +697,23 @@ function createPlayerCardHTML(player) {
         </div>
         ${isHost && !player.isHost ? `<button class="btn btn-kick" data-player-id="${player.id}">X</button>` : ''}
     `;
+}
+
+// Function to resize the game viewport based on window size
+function resizeGameViewport() {
+    const viewport = document.getElementById('game-viewport');
+    const designWidth = 1920; // Your game's design width
+    const designHeight = 1080; // Your game's design height
+
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    const widthRatio = windowWidth / designWidth;
+    const heightRatio = windowHeight / designHeight;
+
+    const scale = Math.min(widthRatio, heightRatio);
+
+    viewport.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    viewport.style.width = `${designWidth}px`;
+    viewport.style.height = `${designHeight}px`;
 }

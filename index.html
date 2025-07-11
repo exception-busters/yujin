@@ -7,151 +7,174 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="profile-container">
-        <img id="profile-picture" src="assets/default_Profile.png" alt="Profile Picture">
-        <div id="nickname"></div>
-    </div>
-    <div id="menu-container">
-        <h1>3D Racing Game</h1>
-        <div id="main-menu-buttons" class="menu-buttons">
-            <button id="start-game" class="btn btn-primary">Start Game</button>
-            <button id="option" class="btn btn-primary">Option</button>
-            <button id="garage" class="btn btn-primary">Garage</button> 
-            <button id="store" class="btn btn-primary">Store</button>
-            <button id="contact" class="btn btn-primary">Contact us</button>
+    <div id="game-viewport">
+        <h1 id="game-title-fixed">3D Racing Game</h1>
+        <div id="profile-container">
+            <img id="profile-picture" src="assets/default_Profile.png" alt="Profile Picture">
+            <div id="nickname"></div>
+        </div>
+        <div id="menu-container">
+            <h2 id="current-menu-title" class="hidden"></h2>
+            <div id="main-menu-buttons" class="menu-buttons">
+                <button id="start-game" class="btn btn-primary">Start Game</button>
+                <button id="option" class="btn btn-primary">Option</button>
+                <button id="garage" class="btn btn-primary">Garage</button> 
+                <button id="store" class="btn btn-primary">Store</button>
+                <button id="contact" class="btn btn-primary">Contact us</button>
+            </div>
+
+            <div id="training-multi-menu" class="menu-buttons hidden">
+                <button id="training-button" class="btn btn-primary">Training</button>
+                <div class="multi-button-wrapper">
+                    <button id="multi-button" class="btn btn-primary">Multi</button>
+                    <div id="multiplayer-options" class="hidden">
+                        <button id="create-room-button" class="btn btn-secondary">Create Room</button>
+                        <button id="join-room-button" class="btn btn-secondary">Join Room</button>
+                    
+                    </div>
+                </div>
+                <button id="back-to-main-menu" class="btn btn-small">Back</button>
+            </div>
         </div>
 
-        <div id="training-multi-menu" class="menu-buttons hidden">
-            <button id="training-button" class="btn btn-primary">Training</button>
-            <div class="multi-button-wrapper">
-                <button id="multi-button" class="btn btn-primary">Multi</button>
-                <div id="multiplayer-options" class="hidden">
-                    <button id="create-room-button" class="btn btn-secondary">Create Room</button>
-                    <button id="join-room-button" class="btn btn-secondary">Join Room</button>
-                
+        <!-- Create Room Modal -->
+        <div id="create-room-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <button class="btn btn-close" id="close-create-room-modal">X</button>
+                <h2>Create Room</h2>
+                <div class="form-group">
+                    <label for="room-title">Room Title:</label>
+                    <input type="text" id="room-title" placeholder="Enter room title" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="private-room-checkbox">
+                    <label for="private-room-checkbox">Private Room</label>
+                </div>
+                <div class="form-group hidden" id="password-group">
+                    <label for="room-password">Password:</label>
+                    <input type="password" id="room-password" placeholder="Enter password">
+                </div>
+                <div class="form-group map-selection-wrapper">
+                    <button id="map-select-button" class="btn btn-auto-width">Map</button>
+                    <span id="selected-map-display">No map selected</span>
+                </div>
+                <div class="form-group game-mode-selection">
+                    <label>Game Mode:</label>
+                    <div>
+                        <input type="radio" id="personal-match" name="game-mode" value="personal" checked>
+                        <label for="personal-match">Personal Match</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="team-match" name="game-mode" value="team">
+                        <label for="team-match">Team Match</label>
+                    </div>
+                </div>
+                <button id="create-room-final-button" class="btn btn-full-width">Create</button>
+            </div>
+        </div>
+
+        <!-- Join Room Modal -->
+        <div id="join-room-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <button class="btn btn-close" id="close-join-room-modal">X</button>
+                <h2>Join Room</h2>
+                <div class="room-list-container">
+                    <div id="room-list">
+                        <!-- Rooms will be dynamically loaded here -->
+                        <p class="no-rooms-message">No rooms available. Create one!</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="join-room-id">Room ID (Optional):</label>
+                    <input type="text" id="join-room-id" placeholder="Enter Room ID">
+                </div>
+                <div class="form-group">
+                    <label for="join-room-password">Password (if private):</label>
+                    <input type="password" id="join-room-password" placeholder="Enter password">
+                </div>
+                <button id="refresh-room-list" class="btn btn-secondary">Refresh List</button>
+                <button id="join-selected-room-button" class="btn btn-full-width">Join Selected Room</button>
+            </div>
+        </div>
+
+        <!-- Map Options moved outside modal again -->
+        <div id="map-options" class="hidden">
+            <!-- Placeholder for maps -->
+            <div class="map-option-item" data-map-name="Desert Map">
+                <div class="map-preview-box"></div>
+                <p class="map-name">Desert Map</p>
+            </div>
+            <div class="map-option-item" data-map-name="City Map">
+                <div class="map-preview-box"></div>
+                <p class="map-name">City Map</p>
+            </div>
+            <div class="map-option-item" data-map-name="Forest Map">
+                <div class="map-preview-box"></div>
+                <p class="map-name">Forest Map</p>
+            </div>
+        </div>
+
+        <div id="waiting-room-container" class="hidden">
+            <div class="waiting-room-header">
+                <h2 id="waiting-room-title">Room Title</h2>
+                <div class="room-details">
+                    <span id="waiting-room-map">Map: Not Selected</span>
+                    <span id="waiting-room-mode">Mode: Personal</span>
+                </div>
+                <div class="room-status">
+                    <span id="waiting-room-private-indicator">Private</span>
+                    <button id="room-settings-button">⚙️</button>
                 </div>
             </div>
-            <button id="back-to-main-menu" class="btn btn-small">Back</button>
+            <div id="player-list" class="player-list personal-layout">
+                <!-- Player slots will be generated by JS -->
+            </div>
+            <div class="waiting-room-footer">
+                <button id="leave-room-button" class="btn btn-tertiary">Leave</button>
+                <button id="ready-button" class="btn btn-tertiary">Ready</button>
+                <button id="start-button" class="btn btn-tertiary hidden">Start</button>
+            </div>
         </div>
-    </div>
 
-    <!-- Create Room Modal -->
-    <div id="create-room-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button class="btn btn-close" id="close-create-room-modal">X</button>
-            <h2>Create Room</h2>
-            <div class="form-group">
-                <label for="room-title">Room Title:</label>
-                <input type="text" id="room-title" placeholder="Enter room title">
+        <div id="not-ready-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <p>모든 유저가 Ready 상태여야 합니다.</p>
+                <button id="not-ready-ok-button" class="btn btn-secondary">OK</button>
             </div>
-            <div class="form-group">
-                <input type="checkbox" id="private-room-checkbox">
-                <label for="private-room-checkbox">Private Room</label>
+        </div>
+
+        <div id="map-not-selected-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <p>맵을 선택해야 합니다.</p>
+                <button id="map-not-selected-ok-button" class="btn btn-secondary">OK</button>
             </div>
-            <div class="form-group hidden" id="password-group">
-                <label for="room-password">Password:</label>
-                <input type="password" id="room-password" placeholder="Enter password">
+        </div>
+
+        <div id="password-not-entered-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <p>비밀번호를 입력해주세요.</p>
+                <button id="password-not-entered-ok-button" class="btn btn-secondary">OK</button>
             </div>
-            <div class="form-group map-selection-wrapper">
-                <button id="map-select-button" class="btn btn-auto-width">Map</button>
-                <span id="selected-map-display">No map selected</span>
+        </div>
+
+        <div id="incorrect-password-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <p>비밀번호가 올바르지 않습니다.</p>
+                <button id="incorrect-password-ok-button" class="btn btn-secondary">OK</button>
             </div>
-            <div class="form-group game-mode-selection">
-                <label>Game Mode:</label>
-                <div>
-                    <input type="radio" id="personal-match" name="game-mode" value="personal" checked>
-                    <label for="personal-match">Personal Match</label>
+        </div>
+
+        <!-- Private Room Password Modal -->
+        <div id="private-room-password-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <button class="btn btn-close" id="close-private-room-password-modal">X</button>
+                <h2>Enter Password</h2>
+                <div class="form-group">
+                    <label for="private-room-password-input">Password:</label>
+                    <input type="password" id="private-room-password-input" placeholder="Enter room password">
                 </div>
-                <div>
-                    <input type="radio" id="team-match" name="game-mode" value="team">
-                    <label for="team-match">Team Match</label>
-                </div>
+                <button id="private-room-password-ok-button" class="btn btn-full-width">OK</button>
             </div>
-            <button id="create-room-final-button" class="btn btn-full-width">Create</button>
-        </div>
-    </div>
-
-    <!-- Join Room Modal -->
-    <div id="join-room-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button class="btn btn-close" id="close-join-room-modal">X</button>
-            <h2>Join Room</h2>
-            <div class="room-list-container">
-                <div id="room-list">
-                    <!-- Rooms will be dynamically loaded here -->
-                    <p class="no-rooms-message">No rooms available. Create one!</p>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="join-room-id">Room ID (Optional):</label>
-                <input type="text" id="join-room-id" placeholder="Enter Room ID">
-            </div>
-            <div class="form-group">
-                <label for="join-room-password">Password (if private):</label>
-                <input type="password" id="join-room-password" placeholder="Enter password">
-            </div>
-            <button id="refresh-room-list" class="btn btn-secondary">Refresh List</button>
-            <button id="join-selected-room-button" class="btn btn-full-width">Join Selected Room</button>
-        </div>
-    </div>
-
-    <!-- Map Options moved outside modal again -->
-    <div id="map-options" class="hidden">
-        <!-- Placeholder for maps -->
-        <div class="map-option-item" data-map-name="Desert Map">
-            <div class="map-preview-box"></div>
-            <p class="map-name">Desert Map</p>
-        </div>
-        <div class="map-option-item" data-map-name="City Map">
-            <div class="map-preview-box"></div>
-            <p class="map-name">City Map</p>
-        </div>
-        <div class="map-option-item" data-map-name="Forest Map">
-            <div class="map-preview-box"></div>
-            <p class="map-name">Forest Map</p>
-        </div>
-    </div>
-
-    <div id="waiting-room-container" class="hidden">
-        <div class="waiting-room-header">
-            <h2 id="waiting-room-title">Room Title</h2>
-            <div class="room-details">
-                <span id="waiting-room-map">Map: Not Selected</span>
-                <span id="waiting-room-mode">Mode: Personal</span>
-            </div>
-            <div class="room-status">
-                <span id="waiting-room-private-indicator">Private</span>
-                <button id="room-settings-button" class="hidden">⚙️</button>
-            </div>
-        </div>
-        <div id="player-list" class="player-list personal-layout">
-            <!-- Player slots will be generated by JS -->
-        </div>
-        <div class="waiting-room-footer">
-            <button id="leave-room-button" class="btn btn-tertiary">Leave</button>
-            <button id="ready-button" class="btn btn-tertiary">Ready</button>
-            <button id="start-button" class="btn btn-tertiary hidden">Start</button>
-        </div>
-    </div>
-
-    <div id="not-ready-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <p>모든 유저가 Ready 상태여야 합니다.</p>
-            <button id="not-ready-ok-button" class="btn btn-secondary">OK</button>
-        </div>
-    </div>
-
-    <div id="map-not-selected-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <p>맵을 선택해야 합니다.</p>
-            <button id="map-not-selected-ok-button" class="btn btn-secondary">OK</button>
-        </div>
-    </div>
-
-    <div id="password-not-entered-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <p>비밀번호를 입력해주세요.</p>
-            <button id="password-not-entered-ok-button" class="btn btn-secondary">OK</button>
         </div>
     </div>
 

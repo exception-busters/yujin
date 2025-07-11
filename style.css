@@ -34,6 +34,29 @@ body, html {
     font-family: 'Orbitron', sans-serif;
 }
 
+#game-viewport {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1920px; /* Desired design width */
+    height: 1080px; /* Desired design height */
+    transform-origin: center center;
+    overflow: hidden; /* Hide content outside the viewport */
+}
+
+#game-title-fixed {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 4rem;
+    color: #0ff;
+    text-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 30px #0ff;
+    z-index: 100;
+    margin: 0;
+}
+
 #bg {
     position: fixed;
     top: 0;
@@ -44,19 +67,30 @@ body, html {
 }
 
 #menu-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 40px;
+    border-radius: 10px;
     text-align: center;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    z-index: 10;
 }
 
-h1 {
+#menu-container h1 {
     font-size: 4rem;
     color: #0ff;
     text-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 30px #0ff;
     margin-bottom: 40px;
+}
+
+#current-menu-title {
+    font-size: 2rem;
+    color: #0ff;
+    text-shadow: 0 0 5px #0ff;
+    margin-bottom: 20px;
 }
 
 /* --- General Button Styles --- */
@@ -179,7 +213,7 @@ h1 {
 
 /* Create Room Modal Styles */
 .modal-overlay {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
@@ -188,7 +222,7 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100; /* Above other elements */
+    z-index: 1000;
 }
 
 .modal-content {
@@ -252,7 +286,7 @@ h1 {
 }
 
 #map-options {
-    position: fixed; /* Changed back to fixed */
+    position: absolute;
     /* top and left will be set by JavaScript */
     background-color: rgba(0, 0, 0, 0.9);
     border: 1px solid #0ff;
@@ -500,7 +534,8 @@ h1 {
 
 #not-ready-modal .modal-content,
 #map-not-selected-modal .modal-content,
-#password-not-entered-modal .modal-content {
+#password-not-entered-modal .modal-content,
+#incorrect-password-modal .modal-content {
     width: 300px;
     text-align: center;
 }
