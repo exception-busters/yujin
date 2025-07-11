@@ -21,10 +21,13 @@ io.on('connection', (socket) => {
 
     // Handle room creation
     socket.on('createRoom', ({ roomTitle, maxPlayers, isPrivate, password, mode, track, nickname }) => {
+        // 방 제목 20자 제한 (서버 측 유효성 검사)
+        const limitedRoomTitle = roomTitle.length > 20 ? roomTitle.substring(0, 20) : roomTitle;
+
         const roomId = `room-${Math.random().toString(36).substr(2, 9)}`;
         rooms[roomId] = {
             id: roomId,
-            title: roomTitle,
+            title: limitedRoomTitle,
             hostId: socket.id,
             players: [{ id: socket.id, nickname, isReady: false, isHost: true, profilePic: '/assets/default_Profile.png' }],
             maxPlayers,
@@ -37,6 +40,26 @@ io.on('connection', (socket) => {
         socket.emit('roomCreated', { roomId, room: rooms[roomId] });
         io.to(roomId).emit('roomUpdate', rooms[roomId]);
         console.log(`Room created: ${roomId} by ${nickname}`);
+        });
+
+    // Handle room settings update
+    socket.on('updateRoomSettings', ({ roomId, roomTitle, isPrivate, password, mode, track }) => {
+        console.log(`Received updateRoomSettings for room ${roomId}:`, { roomTitle, isPrivate, password, mode, track });
+        const room = rooms[roomId];
+        if (room && socket.id === room.hostId) {
+            // 방 제목 20자 제한 (서버 측 유효성 검사)
+            const limitedRoomTitle = roomTitle.length > 20 ? roomTitle.substring(0, 20) : roomTitle;
+            room.title = limitedRoomTitle;
+            room.isPrivate = isPrivate;
+            room.password = password;
+            room.mode = mode;
+            room.track = track;
+            io.to(roomId).emit('roomUpdate', room);
+            io.emit('roomListUpdate', Object.values(rooms)); // Update room list for all clients
+            console.log(`Room ${roomId} settings updated by host ${socket.id}. New room state:`, room);
+        } else {
+            socket.emit('updateRoomSettingsError', 'Only the host can update room settings.');
+        }
     });
 
     socket.on('listRooms', () => {
