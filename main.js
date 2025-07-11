@@ -6,6 +6,7 @@ const socket = io(); // Socket.IO 클라이언트 초기화
 
 // --- DOM Elements ---
 const nicknameElement = document.getElementById('nickname');
+const menuContainer = document.getElementById('menu-container');
 const mainMenuButtons = document.getElementById('main-menu-buttons');
 const trainingMultiMenu = document.getElementById('training-multi-menu');
 const multiplayerOptions = document.getElementById('multiplayer-options');
@@ -425,6 +426,7 @@ function handleLeaveRoomClick() {
         isHost = false;
         waitingRoomContainer.classList.add('hidden');
         mainMenuButtons.classList.remove('hidden'); // Return to main menu
+        menuContainer.classList.remove('hidden'); // 메뉴 컨테이너 다시 표시
     }
 }
 
@@ -631,6 +633,7 @@ function setupWaitingRoom(room) {
     // 대기실 UI 표시
     mainMenuButtons.classList.add('hidden');
     trainingMultiMenu.classList.add('hidden');
+    menuContainer.classList.add('hidden'); // 메뉴 컨테이너 숨기기
     waitingRoomContainer.classList.remove('hidden');
 
     // 강제 리플로우 (브라우저 렌더링 강제)
