@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
 #profile-container {
@@ -618,4 +619,249 @@ h1 {
     color: #ccc;
     font-style: italic;
     padding: 20px;
+}
+
+.join-room-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+}
+
+#password-input-container {
+    display: flex;
+    align-items: center;
+}
+
+#password-input-container input {
+    width: 150px;
+    margin-right: 10px;
+}
+
+.waiting-room-footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #0aa;
+}
+
+.chat-container {
+    flex-grow: 1;
+    margin-right: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 120px; /* Fixed height for chat area */
+}
+
+#chat-messages {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid #0aa;
+    border-radius: 5px;
+    padding: 10px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    color: #fff;
+}
+
+#chat-input {
+    width: calc(100% - 22px); /* Adjust for padding and border */
+    padding: 10px;
+    background-color: #333;
+    border: 1px solid #0ff;
+    color: #fff;
+    border-radius: 5px;
+}
+
+.waiting-room-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#start-game-button {
+    width: 150px;
+    height: 50px;
+    font-size: 1.2rem;
+    background-color: #0f0;
+    color: #000;
+    border-color: #0f0;
+}
+
+#start-game-button:hover {
+    background-color: #fff;
+    box-shadow: 0 0 20px #0f0;
+}
+
+#ready-button {
+    width: 150px;
+    height: 50px;
+    font-size: 1.2rem;
+}
+
+#ready-button.ready {
+    background-color: #f00;
+    color: #fff;
+    border-color: #f00;
+}
+
+#ready-button.ready:hover {
+    background-color: #fff;
+    color: #000;
+    box-shadow: 0 0 20px #f00;
+}
+
+#leave-room-button {
+    width: 150px;
+    height: 35px;
+    font-size: 1rem;
+    background-color: #888;
+    color: #000;
+    border-color: #888;
+}
+
+#leave-room-button:hover {
+    background-color: #fff;
+    box-shadow: 0 0 15px #888;
+}
+
+#countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10rem;
+    color: white;
+    text-shadow: 0 0 20px black;
+    z-index: 1000;
+    display: none; /* Initially hidden */
+}
+
+#speedometer {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 150px;
+    height: 75px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid #0ff;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    text-align: center;
+    padding: 10px;
+}
+
+#speed-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #0ff;
+}
+
+#speed-unit {
+    font-size: 1rem;
+    color: #ccc;
+}
+
+#lap-info {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid #0ff;
+    border-radius: 10px;
+    padding: 10px 15px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+#current-lap {
+    font-weight: bold;
+    color: #0ff;
+}
+
+#total-laps {
+    color: #ccc;
+}
+
+#timer {
+    position: absolute;
+    top: 70px; /* Adjust as needed */
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid #0ff;
+    border-radius: 10px;
+    padding: 10px 15px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+#game-over-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Ensure it's on top */
+}
+
+.game-over-content {
+    background-color: #1a1a1a;
+    padding: 40px;
+    border-radius: 15px;
+    border: 3px solid #0ff;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+    text-align: center;
+    color: #fff;
+}
+
+#game-over-title {
+    font-size: 3rem;
+    color: #0ff;
+    margin-bottom: 20px;
+}
+
+#ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    width: 300px;
+}
+
+#ranking-list li {
+    background-color: #333;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    font-size: 1.2rem;
+}
+
+#back-to-lobby-button {
+    width: 200px;
+    font-size: 1.2rem;
+    margin-top: 20px;
+}
+
+#countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20rem;
+    color: white;
+    text-shadow: 0 0 20px black;
+    z-index: 1000;
+    display: none; /* Initially hidden */
+    font-family: 'Orbitron', sans-serif;
 }

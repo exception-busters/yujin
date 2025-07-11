@@ -155,6 +155,7 @@ function setupEventListeners() {
     // Waiting Room Buttons
     readyButton.addEventListener('click', handleReadyButtonClick);
     leaveRoomButton.addEventListener('click', handleLeaveRoomClick);
+    console.log('Attaching click listener to startButton.');
     startButton.addEventListener('click', handleStartButtonClick);
     notReadyOkButton.addEventListener('click', handleNotReadyOkClick);
     mapNotSelectedOkButton.addEventListener('click', handleMapNotSelectedOkClick);
@@ -357,7 +358,7 @@ function handleCloseCreateRoomModalClick() {
 }
 
 function handleReadyButtonClick() {
-    const isReady = readyButton.textContent === 'Ready'; // 현재 상태가 'Ready'이면 'Unready'로 변경할 예정이므로, 서버에는 true를 보냄
+    const isReady = readyButton.textContent !== 'Ready'; // 현재 상태가 'Ready'이면 'Unready'로 변경할 예정이므로, 서버에는 true를 보냄
     socket.emit('ready', { roomId: currentRoomId, isReady: !isReady }); // 현재 상태의 반대를 보냄
 }
 
@@ -372,13 +373,26 @@ function handleLeaveRoomClick() {
 }
 
 function handleStartButtonClick() {
-
+    debugger;
+    console.log('handleStartButtonClick called.');
     const allReady = players.every(p => p.isHost || p.isReady);
-    if (allReady && isHost) {
-        socket.emit('startGame', currentRoomId);
-        window.location.href = 'game.html';
-    } else {
+
+    if (!isHost) {
+        console.log('Game cannot be started: User is not host.');
         alert('방장만 게임을 시작할 수 있습니다.');
+        return;
+    }
+
+    if (players.length <= 1) {
+        console.log('Game cannot be started: Not enough players.');
+        alert('대기실에 최소 2명의 플레이어가 있어야 게임이 시작됩니다!');
+    } else if (!allReady) {
+        console.log('Game cannot be started: Not all players are ready.');
+        notReadyModal.classList.remove('hidden');
+    } else {
+        console.log('All players are ready and current user is host. Starting game...');
+        window.location.href = 'game.html';
+        socket.emit('startGame', currentRoomId);
     }
 }
 
