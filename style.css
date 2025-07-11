@@ -234,7 +234,7 @@ body, html {
     width: 400px; /* Fixed width for the modal */
     max-width: 90%;
     max-height: 90vh; /* Added: Max height for modal content */
-    overflow-y: auto; /* Added: Enable vertical scrolling if content overflows */
+    overflow: visible; /* Changed from overflow-y: auto; to visible */
     color: #fff;
     text-align: left;
     box-sizing: border-box; /* Added: Include padding and border in element's total width and height */
@@ -287,17 +287,17 @@ body, html {
 
 #map-options {
     position: absolute;
-    /* top and left will be set by JavaScript */
+    top: 0;
+    right: calc(100% + 20px); /* Position to the left of the map select button */
     background-color: rgba(0, 0, 0, 0.9);
     border: 1px solid #0ff;
     padding: 15px;
     border-radius: 5px;
-    /* Removed max-height, overflow-y, overflow-x */
-    display: grid; /* Changed to grid */
-    grid-template-columns: repeat(3, 1fr); /* 3 columns */
-    gap: 10px; /* Gap between items */
-    z-index: 110; /* Above modal content */
-    width: 360px; /* Adjusted width for 3 columns (80px*3 + 10px*2 gaps + 15px*2 padding) */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    z-index: 1001;
+    width: 360px;
     box-sizing: border-box;
 }
 

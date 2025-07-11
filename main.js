@@ -139,13 +139,6 @@ function setupThreeJSScene() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-
-        // Recalculate map options position if visible
-        if (!mapOptions.classList.contains('hidden')) {
-            const rect = mapSelectButton.getBoundingClientRect();
-            mapOptions.style.left = `${rect.right + 20}px`;
-            mapOptions.style.top = `${rect.top}px`;
-        }
     });
 }
 
@@ -350,11 +343,6 @@ function handlePrivateRoomChange() {
 
 function handleMapSelectClick(event) {
     event.stopPropagation(); // Prevent document click from immediately closing
-
-    // Position map options dynamically
-    const rect = event.target.getBoundingClientRect();
-    mapOptions.style.left = `${rect.right + 20}px`;
-    mapOptions.style.top = `${rect.top}px`;
 
     mapOptions.classList.toggle('hidden');
 }

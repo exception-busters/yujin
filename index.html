@@ -57,6 +57,21 @@
                 <div class="form-group map-selection-wrapper">
                     <button id="map-select-button" class="btn btn-auto-width">Map</button>
                     <span id="selected-map-display">No map selected</span>
+                    <div id="map-options" class="hidden">
+                        <!-- Placeholder for maps -->
+                        <div class="map-option-item" data-map-name="Desert Map">
+                            <div class="map-preview-box"></div>
+                            <p class="map-name">Desert Map</p>
+                        </div>
+                        <div class="map-option-item" data-map-name="City Map">
+                            <div class="map-preview-box"></div>
+                            <p class="map-name">City Map</p>
+                        </div>
+                        <div class="map-option-item" data-map-name="Forest Map">
+                            <div class="map-preview-box"></div>
+                            <p class="map-name">Forest Map</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group game-mode-selection">
                     <label>Game Mode:</label>
@@ -94,23 +109,6 @@
                 </div>
                 <button id="refresh-room-list" class="btn btn-secondary">Refresh List</button>
                 <button id="join-selected-room-button" class="btn btn-full-width">Join Selected Room</button>
-            </div>
-        </div>
-
-        <!-- Map Options moved outside modal again -->
-        <div id="map-options" class="hidden">
-            <!-- Placeholder for maps -->
-            <div class="map-option-item" data-map-name="Desert Map">
-                <div class="map-preview-box"></div>
-                <p class="map-name">Desert Map</p>
-            </div>
-            <div class="map-option-item" data-map-name="City Map">
-                <div class="map-preview-box"></div>
-                <p class="map-name">City Map</p>
-            </div>
-            <div class="map-option-item" data-map-name="Forest Map">
-                <div class="map-preview-box"></div>
-                <p class="map-name">Forest Map</p>
             </div>
         </div>
 
