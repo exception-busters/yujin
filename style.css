@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
 #profile-container {
@@ -40,10 +39,10 @@ body, html {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 1920px; /* Desired design width */
-    height: 1080px; /* Desired design height */
+    width: 1920px;
+    height: 1080px;
     transform-origin: center center;
-    overflow: hidden; /* Hide content outside the viewport */
+    overflow: hidden;
 }
 
 #game-title-fixed {
@@ -94,7 +93,6 @@ body, html {
     margin-bottom: 20px;
 }
 
-/* --- General Button Styles --- */
 .btn {
     background: transparent;
     border: 2px solid #0ff;
@@ -112,7 +110,6 @@ body, html {
     box-shadow: 0 0 20px #0ff;
 }
 
-/* --- Button Variations --- */
 .btn-primary {
     display: block;
     width: 250px;
@@ -195,24 +192,23 @@ body, html {
 
 .multi-button-wrapper {
     position: relative;
-    display: block; /* Changed from inline-block to block */
+    display: block;
 }
 
 #multiplayer-options {
     position: absolute;
     top: 0;
-    left: calc(100% + 20px); /* Position to the right of the multi button */
+    left: calc(100% + 20px);
     background-color: rgba(0, 0, 0, 0.9);
     border: 1px solid #0ff;
     padding: 10px;
     border-radius: 5px;
     display: flex;
     flex-direction: column;
-    white-space: nowrap; /* Prevent text wrapping */
+    white-space: nowrap;
     z-index: 10;
 }
 
-/* Create Room Modal Styles */
 .modal-overlay {
     position: absolute;
     top: 0;
@@ -224,6 +220,17 @@ body, html {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    pointer-events: auto;
+}
+
+#audio-settings-modal.modal-overlay {
+    z-index: 1000;
+}
+
+#mic-test-window.modal-overlay {
+    background-color: transparent; /* 배경 덮개 제거 */
+    z-index: 1001; /* audio-settings-modal 위에 표시 */
+    pointer-events: none; /* 배경 클릭 차단 */
 }
 
 .modal-content {
@@ -232,14 +239,12 @@ body, html {
     border-radius: 10px;
     border: 2px solid #0ff;
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-    width: 400px; /* Fixed width for the modal */
-    max-width: 90%;
-    max-height: 90vh; /* Added: Max height for modal content */
-    overflow: visible; /* Changed from overflow-y: auto; to visible */
+    width: 400px;
     color: #fff;
     text-align: left;
-    box-sizing: border-box; /* Added: Include padding and border in element's total width and height */
-    position: relative; /* For absolute positioning of close button */
+    box-sizing: border-box;
+    position: relative;
+    transform: scale(1);
 }
 
 .modal-content h2 {
@@ -260,8 +265,9 @@ body, html {
 }
 
 .form-group input[type="text"],
-.form-group input[type="password"] {
-    width: calc(100% - 20px); /* Account for padding */
+.form-group input[type="password"],
+.form-group select {
+    width: calc(100% - 20px);
     padding: 10px;
     background-color: #333;
     border: 1px solid #0ff;
@@ -274,6 +280,38 @@ body, html {
     margin-right: 10px;
 }
 
+.form-group input[type="range"] {
+  width: 100%;
+  background: #333;
+  border: 1px solid #0ff;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.form-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  background: #0ff;
+  border-radius: 50%;
+  box-shadow: 0 0 5px #0ff;
+}
+
+.form-group input[type="range"]::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  background: #0ff;
+  border-radius: 50%;
+  box-shadow: 0 0 5px #0ff;
+}
+
+.form-group label span {
+  color: #0ff;
+  font-weight: bold;
+}
+
+
+
 .game-mode-selection label {
     display: inline-block;
     margin-right: 20px;
@@ -281,7 +319,7 @@ body, html {
 
 .map-selection-wrapper {
     position: relative;
-    display: flex; /* To align button and options */
+    display: flex;
     align-items: center;
     margin-bottom: 15px;
 }
@@ -289,7 +327,7 @@ body, html {
 #map-options {
     position: absolute;
     top: 0;
-    right: calc(100% + 20px); /* Position to the left of the map select button */
+    right: calc(100% + 20px);
     background-color: rgba(0, 0, 0, 0.9);
     border: 1px solid #0ff;
     padding: 15px;
@@ -301,8 +339,6 @@ body, html {
     width: 360px;
     box-sizing: border-box;
 }
-
-
 
 #selected-map-display {
     margin-left: 15px;
@@ -316,16 +352,11 @@ body, html {
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    margin-bottom: 0; /* Removed margin-bottom as gap handles spacing */
     border: 1px solid #0ff;
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.2s ease;
     background-color: #222;
-}
-
-.map-option-item:last-child {
-    margin-bottom: 0;
 }
 
 .map-option-item:hover {
@@ -337,7 +368,7 @@ body, html {
 .map-preview-box {
     width: 80px;
     height: 80px;
-    background-color: #555; /* Placeholder for image */
+    background-color: #555;
     border: 1px solid #444;
     margin-bottom: 5px;
     display: flex;
@@ -357,11 +388,56 @@ body, html {
     color: #000;
 }
 
+.audio-settings-content {
+    width: 400px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: auto; /* 항상 클릭 가능 */
+}
 
+.mic-test-content {
+    width: 300px;
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 220px); /* 오른쪽 배치 */
+    transform: translateY(-50%);
+    pointer-events: auto; /* 내부 요소 클릭 가능 */
+}
 
+.power-bar-group {
+    margin-bottom: 20px;
+}
 
+.power-bar-container {
+    width: 100%;
+    height: 20px;
+    background-color: #333;
+    border: 1px solid #0ff;
+    border-radius: 5px;
+    overflow: hidden;
+}
 
-/* Waiting Room Styles */
+.power-bar {
+    height: 100%;
+    background-color: #0ff;
+    width: 0;
+    transition: width 0.1s ease;
+}
+
+.power-bar.peak {
+    background-color: #f00;
+}
+
+#mic-sensitivity,
+#mic-select,
+#mic-test-button,
+#close-audio-settings-modal {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
 #waiting-room-container {
     position: absolute;
     top: 50%;
@@ -454,30 +530,26 @@ body, html {
     padding: 15px;
     display: flex;
     align-items: center;
-    justify-content: center; /* Center content for empty slots */
+    justify-content: center;
     position: relative;
-    min-height: 94px; /* Set a minimum height based on player card */
+    min-height: 94px;
 }
 
 .team-slot {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
-    background-color: rgba(0, 50, 80, 0.7);
-    border: 1px solid #0aa;
-    border-radius: 10px;
-    padding: 15px;
 }
 
 .player-wrapper {
-    position: relative; /* This will be the reference for the kick button */
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: rgba(0, 30, 50, 0.8);
     border-radius: 8px;
     padding: 10px;
-    min-height: 74px; /* Adjust to match inner content height */
+    min-height: 74px;
 }
 
 .team-slot .player-card.empty-slot {
@@ -487,7 +559,7 @@ body, html {
 .player-card {
     display: flex;
     align-items: center;
-    width: 100%; /* Ensure player card takes full width */
+    width: 100%;
 }
 
 .player-card.empty-slot {
@@ -502,21 +574,19 @@ body, html {
     border-radius: 50%;
     border: 2px solid #0ff;
     margin-right: 15px;
-    object-fit: cover; /* 이미지 비율 유지 및 컨테이너 채우기 */
+    object-fit: cover;
 }
 
-/* ... 기존 스타일 ... */
-
 .player-info {
-    display: flex; /* 기존 flex 유지 */
-    flex-direction: column; /* 자식 요소들을 세로로 배치 */
-    justify-content: center; /* 세로 중앙 정렬 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .player-nickname {
     font-size: 1.2rem;
     font-weight: bold;
-    margin-bottom: 5px; /* 닉네임과 상태 사이 간격 */
+    margin-bottom: 5px;
 }
 
 .player-status {
@@ -529,7 +599,7 @@ body, html {
 }
 
 .player-status.host-status {
-    color: #ff0; /* Host 글자 색상 */
+    color: #ff0;
     font-weight: bold;
 }
 
@@ -556,13 +626,12 @@ body, html {
     font-size: 1rem;
 }
 
-/* Join Room Modal Styles */
 #join-room-modal .modal-content {
     width: 600px;
 }
 
 .room-list-container {
-    max-height: 300px; /* Scrollable area for room list */
+    max-height: 300px;
     overflow-y: auto;
     border: 1px solid #0aa;
     border-radius: 5px;
@@ -688,7 +757,7 @@ body, html {
     margin-right: 20px;
     display: flex;
     flex-direction: column;
-    height: 120px; /* Fixed height for chat area */
+    height: 120px;
 }
 
 #chat-messages {
@@ -703,7 +772,7 @@ body, html {
 }
 
 #chat-input {
-    width: calc(100% - 22px); /* Adjust for padding and border */
+    width: calc(100% - 22px);
     padding: 10px;
     background-color: #333;
     border: 1px solid #0ff;
@@ -763,7 +832,6 @@ body, html {
     box-shadow: 0 0 15px #888;
 }
 
-
 #speedometer {
     position: absolute;
     bottom: 20px;
@@ -815,7 +883,7 @@ body, html {
 
 #timer {
     position: absolute;
-    top: 70px; /* Adjust as needed */
+    top: 70px;
     right: 20px;
     background-color: rgba(0, 0, 0, 0.5);
     border: 2px solid #0ff;
@@ -837,7 +905,7 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000; /* Ensure it's on top */
+    z-index: 2000;
 }
 
 .game-over-content {
@@ -886,7 +954,7 @@ body, html {
     color: white;
     text-shadow: 0 0 20px black;
     z-index: 1000;
-    display: none; /* Initially hidden */
+    display: none;
     font-family: 'Orbitron', sans-serif;
 }
 
@@ -897,14 +965,13 @@ body, html {
     outline: none;
 }
 
-/* In-Game UI Overlay Styles */
 .ingame-ui-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* Allow interaction with the game canvas */
+    pointer-events: none;
 }
 
 .ui-panel {
@@ -925,7 +992,7 @@ body, html {
     top: 50%;
     left: 20px;
     width: 200px;
-    height: 600px; /* Made taller */
+    height: 600px;
     transform: translateY(-50%);
 }
 
@@ -937,18 +1004,18 @@ body, html {
 }
 
 .minimap {
-    top: 40%; /* Moved down slightly */
+    top: 40%;
     right: 20px;
-    width: 300px; /* Made larger */
-    height: 250px; /* Made larger */
-    background-color: rgba(128, 128, 128, 0.5); /* Semi-transparent gray */
-    border: none; /* No border */
-    box-shadow: none; /* No shadow */
+    width: 300px;
+    height: 250px;
+    background-color: rgba(128, 128, 128, 0.5);
+    border: none;
+    box-shadow: none;
 }
 
 .gauges-panel {
     bottom: 20px;
     right: 20px;
-    width: 350px; /* Made larger */
-    height: 150px; /* Made larger */
+    width: 350px;
+    height: 150px;
 }
