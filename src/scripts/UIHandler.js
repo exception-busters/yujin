@@ -73,6 +73,36 @@ export default class UIHandler {
         this.lobbyBgmVolumeSlider = document.getElementById('lobby-bgm-volume');
         this.lobbyBgmVolumeValue = document.getElementById('lobby-bgm-volume-value');
         this.micSensitivityValue = document.getElementById('mic-sensitivity-value');
+        this.noiseGateToggle = document.getElementById('noise-gate-toggle');
+        this.noiseGateIntensitySlider = document.getElementById('noise-gate-intensity');
+        this.noiseGateIntensityValue = document.getElementById('noise-gate-intensity-value');
+
+        // Graphic Settings DOM Elements
+        this.graphicButton = document.getElementById('graphic-button');
+        this.graphicSettings = document.getElementById('graphic-settings');
+        this.graphicQualityRadios = document.querySelectorAll('input[name="graphic-quality"]');
+
+        // Main Menu Buttons for hover sound
+        this.mainMenuButtonsList = document.querySelectorAll('#main-menu-buttons .btn-primary');
+
+        // Other button groups for hover sound
+        this.trainingMultiButtons = document.querySelectorAll('#training-multi-menu button');
+        this.optionMenuButtons = document.querySelectorAll('#option-menu button');
+        this.waitingRoomButtons = document.querySelectorAll('#waiting-room-container button');
+        this.modalButtons = document.querySelectorAll('.modal-content button, .modal-content input[type="radio"], .modal-content input[type="checkbox"], .modal-content .map-option-item');
+
+        // All clickable elements for click sound
+        this.allClickableElements = document.querySelectorAll(
+            '#main-menu-buttons button,'
+            + '#training-multi-menu button,'
+            + '#option-menu button,'
+            + '#waiting-room-container button,'
+            + '.modal-content button,'
+            + '.modal-content input[type="radio"],'
+            + '.modal-content input[type="checkbox"],'
+            + '.modal-content .map-option-item,'
+            + '.room-item' // Add room items for click sound
+        );
     }
 
     initializeUI() {
@@ -81,6 +111,19 @@ export default class UIHandler {
         this.selectedMapDisplay.textContent = 'No map selected';
         this.resizeGameViewport();
         window.addEventListener('resize', this.resizeGameViewport.bind(this));
+
+        // 노이즈 게이트 초기 상태 설정
+        this.noiseGateToggle.checked = localStorage.getItem('noiseGateEnabled') === 'true';
+        this.noiseGateIntensitySlider.value = localStorage.getItem('noiseGateIntensity') || -45;
+        this.noiseGateIntensityValue.textContent = `${this.noiseGateIntensitySlider.value} dB`;
+
+        // 그래픽 품질 초기 상태 설정
+        const savedQuality = localStorage.getItem('graphicQuality') || 'medium';
+        this.graphicQualityRadios.forEach(radio => {
+            if (radio.value === savedQuality) {
+                radio.checked = true;
+            }
+        });
     }
 
     generateRandomNickname() {
@@ -133,6 +176,36 @@ export default class UIHandler {
         this.micSensitivitySlider.addEventListener('input', this.handleMicSensitivityChange.bind(this));
         this.closeMicTestWindowButton.addEventListener('click', this.handleCloseMicTestWindow.bind(this));
         this.lobbyBgmVolumeSlider.addEventListener('input', this.handleLobbyBgmVolumeChange.bind(this));
+        this.noiseGateToggle.addEventListener('change', this.handleNoiseGateToggleChange.bind(this));
+        this.noiseGateIntensitySlider.addEventListener('input', this.handleNoiseGateIntensityChange.bind(this));
+        this.graphicButton.addEventListener('click', this.handleGraphicButtonClick.bind(this));
+        this.graphicQualityRadios.forEach(radio => {
+            radio.addEventListener('change', this.handleGraphicQualityChange.bind(this));
+        });
+
+        // Add hover sound to main menu buttons
+        this.mainMenuButtonsList.forEach(button => {
+            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+        });
+
+        // Add hover sound to other button groups
+        this.trainingMultiButtons.forEach(button => {
+            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+        });
+        this.optionMenuButtons.forEach(button => {
+            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+        });
+        this.waitingRoomButtons.forEach(button => {
+            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+        });
+        this.modalButtons.forEach(button => {
+            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+        });
+
+        // Add click sound to all clickable elements
+        this.allClickableElements.forEach(element => {
+            element.addEventListener('click', () => this.audioManager.playClickSound());
+        });
     }
 
     getById(id) {
@@ -444,6 +517,31 @@ export default class UIHandler {
 
     handleLobbyBgmVolumeChange() {
         this.audioManager.handleLobbyBgmVolumeChange();
+    }
+
+    handleNoiseGateToggleChange() {
+        this.audioManager.handleNoiseGateToggleChange(this.noiseGateToggle.checked);
+        localStorage.setItem('noiseGateEnabled', this.noiseGateToggle.checked);
+    }
+
+    handleNoiseGateIntensityChange() {
+        this.noiseGateIntensityValue.textContent = `${this.noiseGateIntensitySlider.value} dB`;
+        this.audioManager.handleNoiseGateIntensityChange(parseFloat(this.noiseGateIntensitySlider.value));
+        localStorage.setItem('noiseGateIntensity', this.noiseGateIntensitySlider.value);
+    }
+
+    handleGraphicButtonClick() {
+        console.log('Graphic button clicked');
+        this.audioSettingsModal.classList.add('hidden');
+        this.graphicSettings.classList.remove('hidden');
+        // Hide other option menus if any
+        // this.generalSettings.classList.add('hidden');
+    }
+
+    handleGraphicQualityChange(event) {
+        const selectedQuality = event.target.value;
+        localStorage.setItem('graphicQuality', selectedQuality);
+        console.log('Graphic quality changed to:', selectedQuality);
     }
 
     // --- Utility Functions ---

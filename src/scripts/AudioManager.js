@@ -4,7 +4,8 @@ export default class AudioManager {
         this.uiHandler = uiHandler;
         this.audioContext = null;
         this.microphoneStream = null;
-        this.analyserNode = null;
+        this.controlAnalyserNode = null; // For noise gate logic (raw signal)
+        this.displayAnalyserNode = null; // For power bar display (gated signal)
         this.isTesting = false;
         this.sensitivity = 1.0;
         this.lobbyBgm = document.getElementById('lobby-bgm');
@@ -13,14 +14,24 @@ export default class AudioManager {
         };
 
         // 노이즈 게이팅 임계값 (dB) - 이 값보다 작은 소리는 무시
-        this.noiseGateThresholdDb = -45; // -45dB로 설정, 필요에 따라 조정 가능
+        this.noiseGateThresholdDb = parseFloat(localStorage.getItem('noiseGateIntensity')) || -45; // -45dB로 설정, 필요에 따라 조정 가능
+        this.isNoiseGateEnabled = localStorage.getItem('noiseGateEnabled') === 'true';
 
         // 스무딩을 위한 EMA 계수
         this.smoothingFactor = 0.2; // 0.0 (최대 스무딩) ~ 1.0 (스무딩 없음)
         this.smoothedTotalRms = 0;
         this.smoothedLowRms = 0;
         this.smoothedHighRms = 0;
+        this.gainNode = null; // Add gainNode property
+        this.micInputGain = 5.0; // Initial gain for microphone input
+        this.lastLogTime = 0; // For throttling console logs in updatePowerBars
+        this.logInterval = 3000; // Log every 3 seconds for updatePowerBars
+        this.lastPowerBarLogTime = 0; // For throttling console logs in updatePowerBar
+        this.powerBarLogInterval = 3000; // Log every 3 seconds for updatePowerBar
+        this.hoverSound = document.getElementById('hover-sound'); // Add hover sound element
+        this.clickSound = document.getElementById('click-sound'); // Add click sound element
         this.initializeAudio();
+        this.setupEventListeners();
     }
 
     initializeAudio() {
@@ -43,6 +54,8 @@ export default class AudioManager {
         this.uiHandler.micTestButton.addEventListener('click', this.handleMicTestButtonClick.bind(this));
         this.uiHandler.closeMicTestWindowButton.addEventListener('click', this.handleCloseMicTestWindow.bind(this));
         this.uiHandler.lobbyBgmVolumeSlider.addEventListener('input', this.handleLobbyBgmVolumeChange.bind(this));
+        this.uiHandler.noiseGateToggle.addEventListener('change', (e) => this.handleNoiseGateToggleChange(e.target.checked));
+        this.uiHandler.noiseGateIntensitySlider.addEventListener('input', (e) => this.handleNoiseGateIntensityChange(parseFloat(e.target.value)));
     }
 
     saveVolumeSettings() {
@@ -90,73 +103,142 @@ export default class AudioManager {
             this.isTesting = true;
 
             const source = this.audioContext.createMediaStreamSource(stream);
-            this.analyserNode = this.audioContext.createAnalyser();
-            this.analyserNode.fftSize = 2048;
+            this.gainNode = this.audioContext.createGain(); // Create gain node for noise gate
+            this.controlAnalyserNode = this.audioContext.createAnalyser(); // For noise gate logic
+            this.controlAnalyserNode.fftSize = 2048;
 
-            const lowFilter = this.audioContext.createBiquadFilter();
-            lowFilter.type = 'bandpass';
-            lowFilter.frequency.setValueAtTime(100, this.audioContext.currentTime);
-            lowFilter.Q.setValueAtTime(3, this.audioContext.currentTime);
+            this.displayAnalyserNode = this.audioContext.createAnalyser(); // For power bar display
+            this.displayAnalyserNode.fftSize = 2048;
 
-            const highFilter = this.audioContext.createBiquadFilter();
-            highFilter.type = 'bandpass';
-            highFilter.frequency.setValueAtTime(475, this.audioContext.currentTime);
-            highFilter.Q.setValueAtTime(5, this.audioContext.currentTime);
+            // Control path filters and analysers (for noise gate decision)
+            const controlLowFilter = this.audioContext.createBiquadFilter();
+            controlLowFilter.type = 'bandpass';
+            controlLowFilter.frequency.setValueAtTime(100, this.audioContext.currentTime);
+            controlLowFilter.Q.setValueAtTime(3, this.audioContext.currentTime);
 
-            const lowAnalyser = this.audioContext.createAnalyser();
-            lowAnalyser.fftSize = 2048;
-            const highAnalyser = this.audioContext.createAnalyser();
-            highAnalyser.fftSize = 2048;
+            const controlHighFilter = this.audioContext.createBiquadFilter();
+            controlHighFilter.type = 'bandpass';
+            controlHighFilter.frequency.setValueAtTime(475, this.audioContext.currentTime);
+            controlHighFilter.Q.setValueAtTime(5, this.audioContext.currentTime);
 
-            source.connect(this.analyserNode);
-            source.connect(lowFilter);
-            lowFilter.connect(lowAnalyser);
-            source.connect(highFilter);
-            highFilter.connect(highAnalyser);
+            this.controlLowAnalyser = this.audioContext.createAnalyser();
+            this.controlLowAnalyser.fftSize = 2048;
+            this.controlHighAnalyser = this.audioContext.createAnalyser();
+            this.controlHighAnalyser.fftSize = 2048;
 
-            const bufferLength = this.analyserNode.frequencyBinCount;
-            const dataArray = new Float32Array(bufferLength);
-            const lowDataArray = new Float32Array(lowAnalyser.frequencyBinCount);
-            const highDataArray = new Float32Array(highAnalyser.frequencyBinCount);
+            // Display path filters and analysers (for power bar display)
+            const displayLowFilter = this.audioContext.createBiquadFilter();
+            displayLowFilter.type = 'bandpass';
+            displayLowFilter.frequency.setValueAtTime(100, this.audioContext.currentTime);
+            displayLowFilter.Q.setValueAtTime(3, this.audioContext.currentTime);
+
+            const displayHighFilter = this.audioContext.createBiquadFilter();
+            displayHighFilter.type = 'bandpass';
+            displayHighFilter.frequency.setValueAtTime(475, this.audioContext.currentTime);
+            displayHighFilter.Q.setValueAtTime(5, this.audioContext.currentTime);
+
+            this.displayLowAnalyser = this.audioContext.createAnalyser();
+            this.displayLowAnalyser.fftSize = 2048;
+            this.displayHighAnalyser = this.audioContext.createAnalyser();
+            this.displayHighAnalyser.fftSize = 2048;
+
+            // Connect source to control path (for noise gate decision)
+            source.connect(this.controlAnalyserNode);
+            source.connect(controlLowFilter);
+            controlLowFilter.connect(this.controlLowAnalyser);
+            source.connect(controlHighFilter);
+            controlHighFilter.connect(this.controlHighAnalyser);
+
+            // Connect source to gainNode (noise gate)
+            source.connect(this.gainNode);
+
+            // Connect gainNode output to display path (for power bar display)
+            this.gainNode.connect(this.displayAnalyserNode);
+            this.gainNode.connect(displayLowFilter);
+            displayLowFilter.connect(this.displayLowAnalyser);
+            this.gainNode.connect(displayHighFilter);
+            displayHighFilter.connect(this.displayHighAnalyser);
+
+            // Uncomment the line below if you want to hear your own voice during the test
+            // this.gainNode.connect(this.audioContext.destination);
+
+            // Data arrays for control path
+            const controlBufferLength = this.controlAnalyserNode.frequencyBinCount;
+            const controlDataArray = new Float32Array(controlBufferLength);
+            const controlLowDataArray = new Float32Array(this.controlLowAnalyser.frequencyBinCount);
+            const controlHighDataArray = new Float32Array(this.controlHighAnalyser.frequencyBinCount);
+
+            // Data arrays for display path
+            const displayBufferLength = this.displayAnalyserNode.frequencyBinCount;
+            const displayDataArray = new Float32Array(displayBufferLength);
+            const displayLowDataArray = new Float32Array(this.displayLowAnalyser.frequencyBinCount);
+            const displayHighDataArray = new Float32Array(this.displayHighAnalyser.frequencyBinCount);
 
             const updatePowerBars = () => {
                 if (!this.isTesting) return;
 
-                this.analyserNode.getFloatTimeDomainData(dataArray);
-                let sumTotalRms = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    sumTotalRms += dataArray[i] * dataArray[i];
+                // --- Control Path: Get RMS from raw signal for noise gate decision ---
+                this.controlAnalyserNode.getFloatTimeDomainData(controlDataArray);
+                let sumControlTotalRms = 0;
+                for (let i = 0; i < controlBufferLength; i++) {
+                    sumControlTotalRms += controlDataArray[i] * controlDataArray[i];
                 }
-                const currentTotalRms = Math.sqrt(sumTotalRms / bufferLength) * this.sensitivity * 5;
+                let currentControlTotalRms = Math.sqrt(sumControlTotalRms / controlBufferLength) * this.sensitivity * 1;
 
-                // EMA 스무딩 적용
-                this.smoothedTotalRms = this.smoothedTotalRms * (1 - this.smoothingFactor) + currentTotalRms * this.smoothingFactor;
+                // --- Noise Gate Logic ---
+                const thresholdRms = Math.pow(10, this.noiseGateThresholdDb / 20);
+                if (this.isNoiseGateEnabled && currentControlTotalRms < thresholdRms) {
+                    this.gainNode.gain.value = 0; // Mute audio
+                } else {
+                    this.gainNode.gain.value = this.micInputGain; // Pass audio
+                }
+
+                // --- Display Path: Get RMS from gated signal for power bar display ---
+                this.displayAnalyserNode.getFloatTimeDomainData(displayDataArray);
+                let sumDisplayTotalRms = 0;
+                for (let i = 0; i < displayBufferLength; i++) {
+                    sumDisplayTotalRms += displayDataArray[i] * displayDataArray[i];
+                }
+                let currentDisplayTotalRms = Math.sqrt(sumDisplayTotalRms / displayBufferLength) * this.sensitivity * 1;
+
+                // EMA smoothing for display path
+                this.smoothedTotalRms = this.smoothedTotalRms * (1 - this.smoothingFactor) + currentDisplayTotalRms * this.smoothingFactor;
                 const totalDb = 20 * Math.log10(this.smoothedTotalRms + 1e-10);
                 this.updatePowerBar(this.uiHandler.totalPowerBar, totalDb);
 
-                lowAnalyser.getFloatTimeDomainData(lowDataArray);
-                let sumLowRms = 0;
-                for (let i = 0; i < lowAnalyser.frequencyBinCount; i++) {
-                    sumLowRms += lowDataArray[i] * lowDataArray[i];
+                this.displayLowAnalyser.getFloatTimeDomainData(displayLowDataArray);
+                let sumDisplayLowRms = 0;
+                for (let i = 0; i < this.displayLowAnalyser.frequencyBinCount; i++) {
+                    sumDisplayLowRms += displayLowDataArray[i] * displayLowDataArray[i];
                 }
-                const currentLowRms = Math.sqrt(sumLowRms / lowAnalyser.frequencyBinCount) * this.sensitivity * 5;
+                let currentDisplayLowRms = Math.sqrt(sumDisplayLowRms / this.displayLowAnalyser.frequencyBinCount) * this.sensitivity * 1;
 
-                // EMA 스무딩 적용
-                this.smoothedLowRms = this.smoothedLowRms * (1 - this.smoothingFactor) + currentLowRms * this.smoothingFactor;
+                this.smoothedLowRms = this.smoothedLowRms * (1 - this.smoothingFactor) + currentDisplayLowRms * this.smoothingFactor;
                 const lowDb = 20 * Math.log10(this.smoothedLowRms + 1e-10);
                 this.updatePowerBar(this.uiHandler.lowPowerBar, lowDb);
 
-                highAnalyser.getFloatTimeDomainData(highDataArray);
-                let sumHighRms = 0;
-                for (let i = 0; i < highAnalyser.frequencyBinCount; i++) {
-                    sumHighRms += highDataArray[i] * highDataArray[i];
+                this.displayHighAnalyser.getFloatTimeDomainData(displayHighDataArray);
+                let sumDisplayHighRms = 0;
+                for (let i = 0; i < this.displayHighAnalyser.frequencyBinCount; i++) {
+                    sumDisplayHighRms += displayHighDataArray[i] * displayHighDataArray[i];
                 }
-                const currentHighRms = Math.sqrt(sumHighRms / highAnalyser.frequencyBinCount) * this.sensitivity * 5;
+                let currentDisplayHighRms = Math.sqrt(sumDisplayHighRms / this.displayHighAnalyser.frequencyBinCount) * this.sensitivity * 1;
 
-                // EMA 스무딩 적용
-                this.smoothedHighRms = this.smoothedHighRms * (1 - this.smoothingFactor) + currentHighRms * this.smoothingFactor;
+                this.smoothedHighRms = this.smoothedHighRms * (1 - this.smoothingFactor) + currentDisplayHighRms * this.smoothingFactor;
                 const highDb = 20 * Math.log10(this.smoothedHighRms + 1e-10);
                 this.updatePowerBar(this.uiHandler.highPowerBar, highDb);
+
+                // Log throttling
+                if (Date.now() - this.lastLogTime > this.logInterval) {
+                    console.log('--- Audio Debug Log ---');
+                    console.log('Control Path - dataArray max:', Math.max(...controlDataArray));
+                    console.log('Control Path - currentControlTotalRms:', currentControlTotalRms);
+                    console.log('Display Path - dataArray max:', Math.max(...displayDataArray));
+                    console.log('Display Path - currentDisplayTotalRms:', currentDisplayTotalRms);
+                    console.log('Display Path - smoothedTotalRms:', this.smoothedTotalRms);
+                    console.log('Display Path - totalDb (sent to power bar):', totalDb);
+                    this.lastLogTime = Date.now();
+                }
 
                 requestAnimationFrame(updatePowerBars);
             };
@@ -170,16 +252,14 @@ export default class AudioManager {
     }
 
     updatePowerBar(bar, db) {
+        if (Date.now() - this.lastPowerBarLogTime > this.powerBarLogInterval) {
+            console.log("Calculated dB (updatePowerBar):", db);
+            this.lastPowerBarLogTime = Date.now();
+        }
         const maxDb = 0;
         const minDb = -60; // 파워 바의 시각적 최소값
 
-        // 노이즈 게이팅 적용
-        let displayDb = db;
-        if (db < this.noiseGateThresholdDb) {
-            displayDb = minDb; // 임계값 이하이면 최소값으로 설정하여 바가 사라지게 함
-        }
-
-        const normalizedDb = Math.min(Math.max(displayDb, minDb), maxDb);
+        const normalizedDb = Math.min(Math.max(db, minDb), maxDb);
         const percentage = ((normalizedDb - minDb) / (maxDb - minDb)) * 100;
         bar.style.width = `${percentage}%`;
         if (db > -10) { // 피크 감지는 실제 dB 값 사용
@@ -251,5 +331,29 @@ export default class AudioManager {
         this.uiHandler.audioSettingsModal.style.opacity = '1';
         this.uiHandler.audioSettingsModal.style.zIndex = '1000';
         console.log('Mic test window closed, audio-settings-modal reactivated');
+    }
+
+    handleNoiseGateToggleChange(isEnabled) {
+        this.isNoiseGateEnabled = isEnabled;
+        console.log('Noise gate enabled:', this.isNoiseGateEnabled);
+    }
+
+    handleNoiseGateIntensityChange(intensity) {
+        this.noiseGateThresholdDb = intensity;
+        console.log('Noise gate intensity changed:', this.noiseGateThresholdDb);
+    }
+
+    playHoverSound() {
+        if (this.hoverSound) {
+            this.hoverSound.currentTime = 0; // Rewind to start
+            this.hoverSound.play().catch(err => console.warn('Hover sound play failed:', err));
+        }
+    }
+
+    playClickSound() {
+        if (this.clickSound) {
+            this.clickSound.currentTime = 0; // Rewind to start
+            this.clickSound.play().catch(err => console.warn('Click sound play failed:', err));
+        }
     }
 }

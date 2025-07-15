@@ -47,6 +47,56 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+/**
+ * Lights
+ */
+const dirLight = new THREE.DirectionalLight(0xFFFFFF, 0.8);
+dirLight.position.set(-60, 100, -10);
+dirLight.castShadow = true;
+dirLight.shadow.camera.top = 50;
+dirLight.shadow.camera.bottom = -50;
+dirLight.shadow.camera.left = -50;
+dirLight.shadow.camera.right = 50;
+dirLight.shadow.camera.near = 0.1;
+dirLight.shadow.camera.far = 200;
+dirLight.shadow.mapSize.width = 4096;
+dirLight.shadow.mapSize.height = 4096;
+scene.add(dirLight);
+
+function applyGraphicSettings() {
+    const quality = localStorage.getItem('graphicQuality') || 'medium'; // Default to medium
+    let pixelRatio = Math.min(window.devicePixelRatio, 2);
+    let shadowMapSize = 4096;
+
+    switch (quality) {
+        case 'low':
+            pixelRatio = 1;
+            shadowMapSize = 1024;
+            break;
+        case 'medium':
+            pixelRatio = Math.min(window.devicePixelRatio, 1.5);
+            shadowMapSize = 2048;
+            break;
+        case 'high':
+            pixelRatio = Math.min(window.devicePixelRatio, 2);
+            shadowMapSize = 4096;
+            break;
+    }
+
+    renderer.setPixelRatio(pixelRatio);
+    dirLight.shadow.mapSize.width = shadowMapSize;
+    dirLight.shadow.mapSize.height = shadowMapSize;
+    if (dirLight.shadow.map) { // Check if map exists before disposing
+        dirLight.shadow.map.dispose(); // Dispose old shadow map
+        dirLight.shadow.map = null; // Clear reference
+    }
+    dirLight.shadow.needsUpdate = true; // Request new shadow map
+    console.log(`Applied graphic settings: ${quality}, Pixel Ratio: ${pixelRatio}, Shadow Map Size: ${shadowMapSize}`);
+}
+
+// Apply settings on initial load
+applyGraphicSettings();
+
 window.addEventListener('resize', () =>
 {
     // Update sizes
@@ -57,9 +107,9 @@ window.addEventListener('resize', () =>
     camera.aspect = sizes.width / sizes.height
     camera.updateProjectionMatrix()
 
-    // Update renderer
+    // Update renderer and graphic settings
     renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    applyGraphicSettings();
 })
 
 const world = new CANNON.World({
@@ -141,22 +191,6 @@ const bodyGroundContactMaterial = new CANNON.ContactMaterial(
     }
 )
 world.addContactMaterial(bodyGroundContactMaterial)
-
-/**
- * Lights
- */
-const dirLight = new THREE.DirectionalLight(0xFFFFFF, 0.8);
-dirLight.position.set(-60, 100, -10);
-dirLight.castShadow = true;
-dirLight.shadow.camera.top = 50;
-dirLight.shadow.camera.bottom = -50;
-dirLight.shadow.camera.left = -50;
-dirLight.shadow.camera.right = 50;
-dirLight.shadow.camera.near = 0.1;
-dirLight.shadow.camera.far = 200;
-dirLight.shadow.mapSize.width = 4096;
-dirLight.shadow.mapSize.height = 4096;
-scene.add(dirLight);
 
 
 /**
