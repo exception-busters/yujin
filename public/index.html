@@ -4,17 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Racing Game</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../src/styles/style.css">
 </head>
 <body>
     <audio id="lobby-bgm" preload="auto" loop>
-    <source src="/assets/audio/lobby_bgm.wav" type="audio/mpeg">
+    <source src="../assets/audio/lobby_bgm.wav" type="audio/mpeg">
     Your browser does not support the audio element.
   </audio>
     <div id="game-viewport">
         <h1 id="game-title-fixed">3D Racing Game</h1>
         <div id="profile-container">
-            <img id="profile-picture" src="assets/default_Profile.png" alt="Profile Picture">
+            <img id="profile-picture" src="../assets/default_Profile.png" alt="Profile Picture">
             <div id="nickname"></div>
         </div>
         <div id="menu-container">
@@ -132,7 +132,7 @@
     </div>
     <div class="form-group">
       <label for="mic-sensitivity">마이크 민감도: <span id="mic-sensitivity-value">1.00</span></label>
-      <input type="range" id="mic-sensitivity" min="0" max="2" step="0.01" value="1">
+      <input type="range" id="mic-sensitivity" min="0" max="1" step="0.01" value="1">
     </div>
     <button id="mic-test-button" class="btn btn-auto-width">마이크 테스트</button>
     <!-- 로비 BGM 볼륨 슬라이더 추가 -->
@@ -245,7 +245,7 @@
     }
     </script>
 
-    <script type="module" src="https://cdn.socket.io/4.7.5/socket.io.esm.min.js"></script>
-    <script type="module" src="main.js"></script>
+    
+    <script type="module" src="../src/scripts/main.js"></script>
 </body>
 </html>

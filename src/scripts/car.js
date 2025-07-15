@@ -47,7 +47,7 @@ export default class Car {
 
         gltfLoader.setDRACOLoader(dracoLoader);
 
-        gltfLoader.load("./assets/chassis.glb", gltf => {
+        gltfLoader.load("../../assets/chassis.glb", gltf => {
             this.chassis = gltf.scene;
             this.chassis.traverse( function(object){
                 if(object.isMesh)
@@ -72,7 +72,7 @@ export default class Car {
 
         this.wheels = [];
         for(let i = 0 ; i < 4 ; i++) {
-            gltfLoader.load("./assets/wheels.glb", gltf => {
+            gltfLoader.load("../../assets/wheels.glb", gltf => {
                 const model = gltf.scene;
                 this.wheels[i] = model;
                 if(i === 1 || i === 3)
