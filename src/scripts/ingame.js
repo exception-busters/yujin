@@ -1,9 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as CANNON from 'cannon-es';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import cannonDebugger from 'https://unpkg.com/cannon-es-debugger@1.0.0/dist/cannon-es-debugger.js';
 
 import Car from './car.js';
+
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+
+const gltfLoader = new GLTFLoader();
+gltfLoader.setDRACOLoader(dracoLoader);
 
 
 var stats = new Stats();
@@ -15,8 +23,8 @@ document.body.appendChild( stats.dom );
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
-scene.fog = new THREE.Fog( 0xFF6000, 10, 50 );
-scene.background = new THREE.Color(0xFF6000);
+// scene.fog = new THREE.Fog( 0xFF6000, 10, 50 );
+//scene.background = new THREE.Color(0xFF6000);
 
 /**
  * Sizes
@@ -46,10 +54,17 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 부드러운 그림자
+
 
 /**
  * Lights
  */
+// Ambient Light (전체 밝기)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // 밝기 60%
+scene.add(ambientLight);
+// Directional Light (태양처럼 비추기)
 const dirLight = new THREE.DirectionalLight(0xFFFFFF, 0.8);
 dirLight.position.set(-60, 100, -10);
 dirLight.castShadow = true;
@@ -216,15 +231,7 @@ window.addEventListener('resize', () =>
 /**
  * Floor
  */
-const floorGeo = new THREE.PlaneGeometry(100, 100);
-const floorMesh = new THREE.Mesh(
-    floorGeo,
-    new THREE.MeshToonMaterial({
-        color: 0x454545
-    })
-)
-floorMesh.rotation.x = -Math.PI * 0.5;
-scene.add(floorMesh)
+
 
 const floorS = new CANNON.Plane();
 const floorB = new CANNON.Body();
@@ -236,6 +243,21 @@ world.addBody(floorB);
 floorB.quaternion.setFromAxisAngle(
     new CANNON.Vec3(-1, 0, 0),
     Math.PI * 0.5
+);
+
+gltfLoader.load(
+    '../../assets/racing_map_1.glb',
+    (gltf) => {
+        const model = gltf.scene;
+        model.scale.set(1, 1, 1);
+        model.traverse((child) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+        scene.add(model);
+    }
 );
 
 /**
