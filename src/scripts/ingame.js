@@ -1,626 +1,607 @@
+// ingame.js - 멀티플레이어 자동차 게임 메인 로직
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'https://unpkg.com/three@0.165.0/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'https://unpkg.com/three@0.165.0/examples/jsm/loaders/DRACOLoader.js';
-import cannonDebugger from 'https://unpkg.com/cannon-es-debugger@1.0.0/dist/cannon-es-debugger.js';
-
+import { io } from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
 import Car from './car.js';
-// 충돌체 생성기 임포트 (현재 사용하지 않음)
-// import { CollisionMeshGenerator, CollisionUtils } from './collision-mesh-generator.js';
 
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+class MultiplayerCarGame {
+    constructor() {
+        // 플레이어 정보
+        this.roomId = null;
+        this.playerId = null;
+        this.nickname = null;
 
-const gltfLoader = new GLTFLoader();
-gltfLoader.setDRACOLoader(dracoLoader);
+        // 게임 상태
+        this.isGameStarted = false;
+        this.cars = new Map(); // playerId -> Car 객체 매핑
 
+        // Three.js 컴포넌트
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.controls = null;
 
-var stats = new Stats();
-stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats.dom.id = 'stats-panel'; // CSS에서 스타일링하기 위한 ID 추가
-document.body.appendChild(stats.dom);
-/**
- * Base
- */
-// Canvas
-const canvas = document.querySelector('canvas.webgl')
-const scene = new THREE.Scene()
-// scene.fog = new THREE.Fog( 0xFF6000, 10, 50 );
-//scene.background = new THREE.Color(0xFF6000);
+        // Cannon.js 물리 엔진
+        this.world = null;
+        this.chassisMaterial = null;
 
-/**
- * Sizes
- */
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-}
+        // 네트워크
+        this.socket = null;
 
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 10000)
-camera.position.set(0, 10, -15)
-scene.add(camera)
+        // 타이밍
+        this.clock = new THREE.Clock();
+        this.lastCallTime = 0;
 
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enabled = false;
+        // 로더
+        this.gltfLoader = null;
+        this.dracoLoader = null;
 
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 부드러운 그림자
-
-
-/**
- * Lights
- */
-// Ambient Light (전체 밝기)
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // 밝기 60%
-scene.add(ambientLight);
-// Directional Light (태양처럼 비추기)
-const dirLight = new THREE.DirectionalLight(0xFFFFFF, 0.8);
-dirLight.position.set(-60, 100, -10);
-dirLight.castShadow = true;
-dirLight.shadow.camera.top = 50;
-dirLight.shadow.camera.bottom = -50;
-dirLight.shadow.camera.left = -50;
-dirLight.shadow.camera.right = 50;
-dirLight.shadow.camera.near = 0.1;
-dirLight.shadow.camera.far = 200;
-dirLight.shadow.mapSize.width = 4096;
-dirLight.shadow.mapSize.height = 4096;
-scene.add(dirLight);
-
-function applyGraphicSettings() {
-    const quality = localStorage.getItem('graphicQuality') || 'medium'; // Default to medium
-    let pixelRatio = Math.min(window.devicePixelRatio, 2);
-    let shadowMapSize = 4096;
-
-    switch (quality) {
-        case 'low':
-            pixelRatio = 1;
-            shadowMapSize = 1024;
-            break;
-        case 'medium':
-            pixelRatio = Math.min(window.devicePixelRatio, 1.5);
-            shadowMapSize = 2048;
-            break;
-        case 'high':
-            pixelRatio = Math.min(window.devicePixelRatio, 2);
-            shadowMapSize = 4096;
-            break;
+        // Stats (성능 모니터링)
+        this.stats = null;
     }
 
-    renderer.setPixelRatio(pixelRatio);
-    dirLight.shadow.mapSize.width = shadowMapSize;
-    dirLight.shadow.mapSize.height = shadowMapSize;
-    if (dirLight.shadow.map) { // Check if map exists before disposing
-        dirLight.shadow.map.dispose(); // Dispose old shadow map
-        dirLight.shadow.map = null; // Clear reference
+    async init() {
+        console.log('🎮 멀티플레이어 자동차 게임 초기화 시작');
+
+        // 1. URL 파라미터 파싱
+        this._parseUrlParams();
+
+        // 2. Three.js 씬 설정
+        this._setupScene();
+
+        // 3. 물리 엔진 설정
+        this._setupPhysics();
+
+        // 4. 네트워크 연결
+        this._setupNetwork();
+
+        // 5. 로더 설정
+        this._setupLoaders();
+
+        // 6. 맵 로드
+        await this._loadMap();
+
+        // 7. 내 자동차 생성
+        await this._createMyCar();
+
+        // 8. 게임 루프 시작
+        this._startGameLoop();
+
+        // 9. 이벤트 리스너 설정
+        this._setupEventListeners();
+
+        // 10. 서버에 게임 참여 알림
+        this._joinGameRoom();
+
+        console.log('✅ 멀티플레이어 자동차 게임 초기화 완료');
     }
-    dirLight.shadow.needsUpdate = true; // Request new shadow map
-    console.log(`Applied graphic settings: ${quality}, Pixel Ratio: ${pixelRatio}, Shadow Map Size: ${shadowMapSize}`);
-}
 
-// Apply settings on initial load
-applyGraphicSettings();
+    // 1. URL 파라미터 파싱
+    _parseUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        this.roomId = urlParams.get('roomId');
+        this.playerId = urlParams.get('playerId');
+        this.nickname = urlParams.get('nickname');
 
-window.addEventListener('resize', () => {
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    // Update renderer and graphic settings
-    renderer.setSize(sizes.width, sizes.height)
-    applyGraphicSettings();
-})
-
-const world = new CANNON.World({
-    gravity: new CANNON.Vec3(0, -9.82, 0), // m/s²
-})
-world.broadphase = new CANNON.SAPBroadphase(world);
-// Cannon.js 디버거 (충돌체 시각화) - 필요시 주석 해제
-// const debugRenderer = cannonDebugger(scene, world.bodies, {color: 0x00ff00});
-// 사용법: tick() 함수에서 debugRenderer.update() 호출
-
-// Define materials
-const groundMaterial = new CANNON.Material('ground');
-const chassisMaterial = new CANNON.Material('chassis');
-
-// Define interaction between materials
-const groundChassisContactMaterial = new CANNON.ContactMaterial(
-    groundMaterial,
-    chassisMaterial,
-    {
-        friction: 0.5,      // Friction between chassis and ground
-        restitution: 0,     // No bounciness
-        contactEquationStiffness: 1e7,
-        contactEquationRelaxation: 3
-    }
-);
-world.addContactMaterial(groundChassisContactMaterial);
-
-const car = new Car(scene, world, chassisMaterial); // Pass the chassis material to the car
-const countdownElement = document.getElementById('countdown');
-car.init().then(() => {
-    car.update(camera);
-    startCountdown();
-});
-
-function setCameraView(viewType) {
-    // Use car.chassis.position and quaternion if available, otherwise default to (0,0,0) and identity quaternion
-    const currentCarPosition = car.chassis ? car.chassis.position : new THREE.Vector3(0, 0, 0);
-    const currentCarQuaternion = car.chassis ? car.chassis.quaternion : new THREE.Quaternion();
-
-    let cameraPosition = new THREE.Vector3();
-    let lookAtTarget = currentCarPosition.clone();
-
-    switch (viewType) {
-        case 'front':
-            cameraPosition.set(currentCarPosition.x, currentCarPosition.y + 6, currentCarPosition.z + 15); // In front of the car
-            break;
-        case 'left':
-            cameraPosition.set(currentCarPosition.x - 7, currentCarPosition.y + 6, currentCarPosition.z + 5); // To the left of the car
-            break;
-        case 'right':
-            cameraPosition.set(currentCarPosition.x + 7, currentCarPosition.y + 6, currentCarPosition.z + 5); // To the right of the car
-            break;
-        case 'chase':
-            // Calculate chase camera position based on current car position and orientation
-            const cameraOffset = new THREE.Vector3(0, 5.5, -15); // This is the offset from car.js
-            const worldOffset = cameraOffset.clone().applyQuaternion(currentCarQuaternion);
-            cameraPosition = currentCarPosition.clone().add(worldOffset);
-            break;
-    }
-    camera.position.copy(cameraPosition);
-    camera.lookAt(lookAtTarget);
-}
-
-function startCountdown() {
-    let count = 5;
-    countdownElement.style.display = 'block';
-    car.isControllable = false; // Ensure car is not controllable during countdown
-
-    const countdownBeep = document.getElementById('countdown-beep');
-    const raceStart = document.getElementById('race-start');
-
-    const countdownInterval = setInterval(() => {
-        if (count > 0) {
-            countdownElement.innerText = count;
-            countdownBeep.currentTime = 0;
-
-            if (count === 5) {
-                setCameraView('front');
-            } else if (count === 4) {
-                setCameraView('left');
-            } else if (count === 3) {
-                setCameraView('chase');
-                countdownBeep.play();
-            } else if (count === 2) {
-                countdownBeep.play();
-            } else if (count === 1) {
-                countdownBeep.play();
-            }
-            count--;
-        } else {
-            clearInterval(countdownInterval);
-            countdownElement.style.display = 'none';
-            car.isControllable = true;
-            raceStart.currentTime = 0;
-            raceStart.play();
+        if (!this.roomId || !this.playerId || !this.nickname) {
+            console.error('❌ 필수 URL 파라미터가 누락되었습니다:', {
+                roomId: this.roomId,
+                playerId: this.playerId,
+                nickname: this.nickname
+            });
+            alert('게임 접속 정보가 올바르지 않습니다. 로비로 돌아갑니다.');
+            window.location.href = '/';
+            return;
         }
-    }, 1000);
-}
 
-
-
-
-/**
- * Cube Texture Loader
- */
-
-
-
-
-/**
- * Floor
- */
-// Create a large, thin box to act as the ground
-const floorShape = new CANNON.Box(new CANNON.Vec3(1000, 0.1, 1000)); // Correctly create a wide, thin box
-const floorBody = new CANNON.Body({
-    mass: 0, // mass = 0 makes it static
-    material: groundMaterial,
-    shape: floorShape,
-    collisionFilterGroup: 1,
-    collisionFilterMask: 1
-});
-floorBody.position.set(0, -0.1, 0); // Position it just below y=0
-world.addBody(floorBody);
-
-gltfLoader.load(
-    '../../assets/racing_map_1.glb',
-    (gltf) => {
-        const model = gltf.scene;
-        model.scale.set(1, 1, 1);
-        model.position.set(0, -0.5, 0); // 물리 지면과 동일한 높이로 조정
-
-        // 그림자 설정
-        model.traverse((child) => {
-            if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-            }
+        console.log('📋 플레이어 정보:', {
+            roomId: this.roomId,
+            playerId: this.playerId,
+            nickname: this.nickname
         });
-
-        scene.add(model);
-
-        console.log('✅ 레이싱 맵 로드 완료');
-
-        // 충돌체 생성 완전 비활성화 (안전 모드)
-        console.log('🛡️ 안전 모드: 모든 GLB 충돌체 생성 비활성화');
-        console.log('🛡️ 기본 바닥 충돌체만 사용하여 차량 안정성 확보');
-
-        /*
-        // 1단계: 단일 큰 Box 충돌체 테스트 (현재 비활성화)
-        console.log('🧪 1단계: 단일 큰 Box 충돌체 테스트');
-        
-        try {
-            // 모델 전체에 대한 바운딩 박스 계산
-            const modelBox = new THREE.Box3().setFromObject(model);
-            
-            const sizeX = (modelBox.max.x - modelBox.min.x) / 2;
-            const sizeY = (modelBox.max.y - modelBox.min.y) / 2;
-            const sizeZ = (modelBox.max.z - modelBox.min.z) / 2;
-            
-            console.log(`모델 전체 크기: ${(sizeX*2).toFixed(1)} x ${(sizeY*2).toFixed(1)} x ${(sizeZ*2).toFixed(1)}`);
-            
-            // 안전한 크기 제한 (너무 크면 문제 발생 가능)
-            if (sizeX > 500 || sizeY > 500 || sizeZ > 500) {
-                console.log('⚠️ 모델이 너무 큽니다. 충돌체 생성을 건너뜁니다.');
-            } else {
-                // 단일 Box 충돌체 생성
-                const boxShape = new CANNON.Box(new CANNON.Vec3(sizeX, sizeY, sizeZ));
-                const testCollisionBody = new CANNON.Body({ 
-                    mass: 0, 
-                    material: new CANNON.Material('test-collision')
-                });
-                testCollisionBody.addShape(boxShape);
-                
-                // 위치 설정 (모델 중심)
-                const centerX = (modelBox.max.x + modelBox.min.x) / 2;
-                const centerY = (modelBox.max.y + modelBox.min.y) / 2;
-                const centerZ = (modelBox.max.z + modelBox.min.z) / 2;
-                
-                testCollisionBody.position.set(centerX, centerY, centerZ);
-                
-                world.addBody(testCollisionBody);
-                console.log(`✅ 테스트 충돌체 생성 완료 (위치: ${centerX.toFixed(1)}, ${centerY.toFixed(1)}, ${centerZ.toFixed(1)})`);
-            }
-            
-        } catch (error) {
-            console.error('❌ 테스트 충돌체 생성 실패:', error);
-        }
-        
-        // 2단계: 개별 메쉬 충돌체 생성 (현재 비활성화 - 1단계 테스트 후 활성화)
-        console.log('🚫 2단계: 개별 메쉬 충돌체 생성 비활성화 (안전 모드)');
-        
-        /*
-        // 2단계 코드는 1단계 테스트 성공 후 활성화 예정
-        console.log('🧪 2단계: 개별 메쉬 충돌체 생성 시작...');
-        
-        try {
-            const generator = new CollisionMeshGenerator(world);
-            let meshCount = 0;
-            let collisionCount = 0;
-            const createdBodies = [];
-
-            model.traverse((child) => {
-                if (child.isMesh && child.geometry) {
-                    meshCount++;
-                    const meshName = child.name || `mesh_${meshCount}`;
-                    console.log(`메쉬 ${meshCount}: ${meshName}`);
-
-                    // 메쉬 크기 분석
-                    const geometry = child.geometry;
-                    geometry.computeBoundingBox();
-                    const box = geometry.boundingBox;
-
-                    const sizeX = box.max.x - box.min.x;
-                    const sizeY = box.max.y - box.min.y;
-                    const sizeZ = box.max.z - box.min.z;
-                    const volume = sizeX * sizeY * sizeZ;
-
-                    // 메쉬 크기 정보 출력
-                    console.log(`  📏 메쉬 크기: ${sizeX.toFixed(2)} x ${sizeY.toFixed(2)} x ${sizeZ.toFixed(2)}, 부피: ${volume.toFixed(4)}`);
-
-                    // 너무 작은 메쉬는 무시 (안전한 임계값)
-                    if (volume < 0.01) {
-                        console.log(`  ⏭️ 작은 메쉬 무시 (부피: ${volume.toFixed(4)})`);
-                        return;
-                    }
-
-                    // 안전 모드: 모든 메쉬를 Box로 생성
-                    let collisionType = 'box';
-                    let shouldCreate = true;
-
-                    // 메쉬 이름 기반 분류 (정보용)
-                    const lowerName = meshName.toLowerCase();
-                    if (lowerName.includes('ground') || lowerName.includes('floor') || lowerName.includes('road') || lowerName.includes('track')) {
-                        console.log(`  🛣️ 지면 메쉬 감지 - Box 사용`);
-                    } else if (lowerName.includes('wall') || lowerName.includes('barrier') || lowerName.includes('building')) {
-                        console.log(`  🏢 벽/건물 메쉬 감지 - Box 사용`);
-                    } else if (lowerName.includes('detail') || lowerName.includes('decoration')) {
-                        console.log(`  🎨 장식 메쉬 감지 - Box 사용`);
-                    } else {
-                        console.log(`  📦 일반 메쉬 - Box 사용`);
-                    }
-
-                    if (!shouldCreate) return;
-
-                    // 안전한 Box 충돌체 생성
-                    try {
-                        const collisionBody = generator.createBoxCollision(child, new CANNON.Material('track'), 0);
-
-                        if (collisionBody) {
-                            // 모델의 위치 적용 (안전하게)
-                            collisionBody.position.x += model.position.x;
-                            collisionBody.position.y += model.position.y;
-                            collisionBody.position.z += model.position.z;
-
-                            // world에 충돌체 추가
-                            world.addBody(collisionBody);
-
-                            createdBodies.push(collisionBody);
-                            collisionCount++;
-                            console.log(`  ✅ Box 충돌체 생성 완료`);
-                        } else {
-                            console.log(`  ❌ 충돌체 생성 실패 - null 반환`);
-                        }
-
-                    } catch (error) {
-                        console.error(`  ❌ ${meshName} 충돌체 생성 실패:`, error);
-                    }
-                }
-            });
-
-            console.log(`✅ 개별 메쉬 충돌체 생성 완료:`);
-            console.log(`   📊 분석된 메쉬: ${meshCount}개`);
-            console.log(`   🎯 생성된 충돌체: ${collisionCount}개`);
-
-        } catch (error) {
-            console.error('❌ 개별 메쉬 충돌체 생성 실패:', error);
-        }
-        */
-
-        /*
-        try {
-        try {
-            const generator = new CollisionMeshGenerator(world);
-            let meshCount = 0;
-            let collisionCount = 0;
-            const createdBodies = [];
-
-            model.traverse((child) => {
-                if (child.isMesh && child.geometry) {
-                    meshCount++;
-                    const meshName = child.name || `mesh_${meshCount}`;
-                    console.log(`메쉬 ${meshCount}: ${meshName}`);
-
-                    // 메쉬 크기 분석
-                    const geometry = child.geometry;
-                    geometry.computeBoundingBox();
-                    const box = geometry.boundingBox;
-
-                    const sizeX = box.max.x - box.min.x;
-                    const sizeY = box.max.y - box.min.y;
-                    const sizeZ = box.max.z - box.min.z;
-                    const volume = sizeX * sizeY * sizeZ;
-
-                    // 메쉬 크기 정보 출력
-                    console.log(`  📏 메쉬 크기: ${sizeX.toFixed(2)} x ${sizeY.toFixed(2)} x ${sizeZ.toFixed(2)}, 부피: ${volume.toFixed(4)}`);
-
-                    // 너무 작은 메쉬는 무시 (임계값 낮춤)
-                    if (volume < 0.0001) {
-                        console.log(`  ⏭️ 너무 작은 메쉬 무시 (부피: ${volume.toFixed(6)})`);
-                        return;
-                    }
-
-                    // 테스트 모드: 모든 메쉬에 대해 Box 충돌체 생성
-                    let collisionType = 'box'; // 모든 것을 Box로 (테스트)
-                    let shouldCreate = true; // 모든 메쉬에 충돌체 생성
-
-                    // 메쉬 이름 기반 분류 (정보 출력용)
-                    const lowerName = meshName.toLowerCase();
-                    if (lowerName.includes('ground') || lowerName.includes('floor') || lowerName.includes('road') || lowerName.includes('track')) {
-                        console.log(`  🛣️ 지면 메쉬 감지 - Box 사용 (테스트 모드)`);
-                    } else if (lowerName.includes('wall') || lowerName.includes('barrier') || lowerName.includes('building')) {
-                        console.log(`  🏢 벽/건물 메쉬 감지 - Box 사용`);
-                    } else if (lowerName.includes('detail') || lowerName.includes('decoration')) {
-                        console.log(`  � 장식 메쉬 감 지 - Box 사용 (테스트 모드에서 강제 생성)`);
-                    } else if (volume > 100) {
-                        console.log(`  📦 큰 메쉬 감지 - Box 사용 (부피: ${volume.toFixed(1)})`);
-                    } else {
-                        console.log(`  📦 일반 메쉬 - Box 사용 (테스트 모드)`);
-                    }
-
-                    // 부피 필터링도 완화 (테스트)
-                    if (volume < 0.01) {
-                        console.log(`  ⚠️ 매우 작은 메쉬이지만 테스트 모드에서 생성 시도`);
-                    }
-
-                    if (!shouldCreate) return;
-
-                    // 충돌체 생성
-                    try {
-                        let collisionBody;
-
-                        if (collisionType === 'trimesh') {
-                            // Trimesh는 버텍스 수 제한
-                            const vertexCount = geometry.attributes.position.count;
-                            if (vertexCount > 500) {
-                                console.log(`  ⚠️ 버텍스 수 초과 (${vertexCount}), Box로 대체`);
-                                collisionBody = generator.createBoxCollision(child, new CANNON.Material('track'), 0);
-                            } else {
-                                collisionBody = generator.createTrimeshCollision(child, new CANNON.Material('track'), 0);
-                            }
-                        } else if (collisionType === 'convex') {
-                            collisionBody = generator.createConvexCollision(child, new CANNON.Material('track'), 0);
-                        } else {
-                            collisionBody = generator.createBoxCollision(child, new CANNON.Material('track'), 0);
-                        }
-
-                        if (collisionBody) {
-                            // 모델의 위치와 회전 적용
-                            collisionBody.position.x += model.position.x;
-                            collisionBody.position.y += model.position.y;
-                            collisionBody.position.z += model.position.z;
-
-                            // ⭐ 중요: world에 충돌체 추가
-                            world.addBody(collisionBody);
-
-                            createdBodies.push(collisionBody);
-                            collisionCount++;
-                            console.log(`  ✅ ${collisionType} 충돌체 생성 및 world 추가 완료`);
-                        } else {
-                            console.log(`  ❌ 충돌체 생성 실패 - null 반환`);
-                        }
-
-                    } catch (error) {
-                        console.error(`  ❌ ${meshName} 충돌체 생성 실패:`, error);
-                        // 실패시 간단한 Box 충돌체로 대체
-                        try {
-                            const fallbackBody = generator.createBoxCollision(child, new CANNON.Material('track'), 0);
-                            if (fallbackBody) {
-                                fallbackBody.position.x += model.position.x;
-                                fallbackBody.position.y += model.position.y;
-                                fallbackBody.position.z += model.position.z;
-                                createdBodies.push(fallbackBody);
-                                collisionCount++;
-                                console.log(`  🔄 Box 충돌체로 대체 생성 완료`);
-                            }
-                        } catch (fallbackError) {
-                            console.error(`  ❌ 대체 충돌체도 실패:`, fallbackError);
-                        }
-                    }
-                }
-            });
-
-            console.log(`✅ 스마트 충돌체 생성 완료:`);
-            console.log(`   📊 분석된 메쉬: ${meshCount}개`);
-            console.log(`   🎯 생성된 충돌체: ${collisionCount}개`);
-            console.log(`   ⚡ 성능 최적화 적용됨`);
-
-            // 기본 바닥 충돌체 유지 (안전장치)
-            console.log('🛡️ 기본 바닥 충돌체 유지 (안전장치로 GLB 충돌체와 함께 사용)');
-            // if (collisionCount > 0) {
-            //     console.log('🗑️ 기본 바닥 충돌체 제거 (GLB 충돌체로 대체)');
-            //     world.removeBody(floorBody);
-            // }
-
-        } catch (error) {
-            console.error('❌ 스마트 충돌체 생성 실패:', error);
-            console.log('✅ 기본 바닥 충돌체를 유지합니다.');
-        }
-    },
-    (progress) => {
-        console.log('맵 로딩 진행률:', (progress.loaded / progress.total * 100) + '%');
-    },
-    (error) => {
-        console.error('맵 로딩 실패:', error);
     }
-);
 
-/**
- * Animate
- */
-        const clock = new THREE.Clock();
-        let oldElapsedTime = 0;
+    // 2. Three.js 씬 설정
+    _setupScene() {
+        const canvas = document.querySelector('canvas.webgl');
 
-        const tick = () => {
-            stats.begin();
+        // 씬 생성
+        this.scene = new THREE.Scene();
 
-            const elapsedTime = clock.getElapsedTime();
-            const deltaTime = elapsedTime - oldElapsedTime;
-            oldElapsedTime = elapsedTime;
+        // 렌더러 설정
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-            // Physics world update
-            world.step(1 / 60, deltaTime);
+        // 카메라 설정
+        this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 10000);
+        this.camera.position.set(0, 10, 15);
+        this.scene.add(this.camera);
 
-            // Render
-            renderer.render(scene, camera)
-            stats.end();
+        // 컨트롤 설정 (초기에는 비활성화)
+        this.controls = new OrbitControls(this.camera, canvas);
+        this.controls.enabled = false;
 
-            // Call tick again on the next frame
-            window.requestAnimationFrame(tick)
+        // 조명 설정
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(-60, 100, -10);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.top = 50;
+        dirLight.shadow.camera.bottom = -50;
+        dirLight.shadow.camera.left = -50;
+        dirLight.shadow.camera.right = 50;
+        dirLight.shadow.camera.near = 0.1;
+        dirLight.shadow.camera.far = 200;
+        dirLight.shadow.mapSize.width = 4096;
+        dirLight.shadow.mapSize.height = 4096;
+        this.scene.add(dirLight);
+
+        // Stats 설정 (성능 모니터링)
+        if (typeof Stats !== 'undefined') {
+            this.stats = new Stats();
+            this.stats.showPanel(0);
+            this.stats.dom.id = 'stats-panel';
+            document.body.appendChild(this.stats.dom);
         }
 
-        tick()
+        console.log('✅ Three.js 씬 설정 완료');
+    }
 
-        // 장애물(Obstacle) 추가: 자동차 정가운데(x=0) 피해서 x=3에 생성
-        const obstacleSize = 1; // half-extent, 실제 크기는 2x2x2
-        const obstacleShape = new CANNON.Box(new CANNON.Vec3(obstacleSize, obstacleSize, obstacleSize));
-        const obstacleBody = new CANNON.Body({
-            mass: 0, // 정적 장애물
-            position: new CANNON.Vec3(0, 1, 10), // y=1로 지면 위에 놓임
+    // 3. 물리 엔진 설정
+    _setupPhysics() {
+        // Cannon.js 월드 생성
+        this.world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+        this.world.broadphase = new CANNON.SAPBroadphase(this.world);
+        this.world.allowSleep = true;
+
+        // 재료 정의
+        const groundMaterial = new CANNON.Material('ground');
+        this.chassisMaterial = new CANNON.Material('chassis');
+
+        // 재료 간 상호작용 정의
+        const groundChassisContactMaterial = new CANNON.ContactMaterial(
+            groundMaterial,
+            this.chassisMaterial,
+            {
+                friction: 0.5,
+                restitution: 0,
+                contactEquationStiffness: 1e7,
+                contactEquationRelaxation: 3
+            }
+        );
+        this.world.addContactMaterial(groundChassisContactMaterial);
+
+        // 바닥 생성
+        const floorShape = new CANNON.Box(new CANNON.Vec3(1000, 0.1, 1000));
+        const floorBody = new CANNON.Body({
+            mass: 0,
+            material: groundMaterial,
+            shape: floorShape,
             collisionFilterGroup: 1,
             collisionFilterMask: 1
         });
-        obstacleBody.addShape(obstacleShape);
-        world.addBody(obstacleBody);
+        floorBody.position.set(0, -0.1, 0);
+        this.world.addBody(floorBody);
 
-        // THREE.js Mesh로 시각화
-        const obstacleGeometry = new THREE.BoxGeometry(2 * obstacleSize, 2 * obstacleSize, 2 * obstacleSize);
-        const obstacleMaterial = new THREE.MeshStandardMaterial({ color: 0xff3333 });
-        const obstacleMesh = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-        obstacleMesh.position.set(0, 1, 10);
-        obstacleMesh.castShadow = true;
-        obstacleMesh.receiveShadow = true;
-        scene.add(obstacleMesh);
-    },
-    (progress) => {
-        console.log('맵 로딩 진행률:', (progress.loaded / progress.total * 100) + '%');
-    },
-    (error) => {
-        console.error('맵 로딩 실패:', error);
+        console.log('✅ 물리 엔진 설정 완료');
     }
-);
 
-/**
- * Animate
- */
-const clock = new THREE.Clock();
-let oldElapsedTime = 0;
+    // 4. 네트워크 연결
+    _setupNetwork() {
+        this.socket = io();
 
-const tick = () => {
-    stats.begin();
+        // 소켓 이벤트 리스너 설정
+        this.socket.on('connect', () => {
+            console.log('🔗 서버에 연결됨:', this.socket.id);
+        });
 
-    const elapsedTime = clock.getElapsedTime();
-    const deltaTime = elapsedTime - oldElapsedTime;
-    oldElapsedTime = elapsedTime;
+        this.socket.on('disconnect', () => {
+            console.log('🔌 서버 연결 끊김');
+        });
 
-    // Physics world update
-    world.step(1 / 60, deltaTime);
+        // 게임 관련 이벤트
+        this.socket.on('existingPlayers', (players) => this._handleExistingPlayers(players));
+        this.socket.on('newPlayer', (player) => this._handleNewPlayer(player));
+        this.socket.on('playerLeft', (playerId) => this._handlePlayerLeft(playerId));
+        this.socket.on('carUpdate', (data) => this._handleCarUpdate(data));
+        this.socket.on('startCountdown', () => this._startCountdown());
+        this.socket.on('gameStart', () => this._handleGameStart());
 
-    // Render
-    renderer.render(scene, camera)
-    stats.end();
+        console.log('✅ 네트워크 연결 설정 완료');
+    }
 
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
+    // 5. 로더 설정
+    _setupLoaders() {
+        this.dracoLoader = new DRACOLoader();
+        this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+
+        this.gltfLoader = new GLTFLoader();
+        this.gltfLoader.setDRACOLoader(this.dracoLoader);
+
+        console.log('✅ 로더 설정 완료');
+    }
+
+    // 6. 맵 로드
+    async _loadMap() {
+        return new Promise((resolve, reject) => {
+            this.gltfLoader.load(
+                '../../assets/racing_map_1.glb',
+                (gltf) => {
+                    const model = gltf.scene;
+                    model.scale.set(1, 1, 1);
+                    model.position.set(0, -0.5, 0);
+
+                    // 그림자 설정
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+
+                    this.scene.add(model);
+                    console.log('✅ 레이싱 맵 로드 완료');
+                    resolve();
+                },
+                (progress) => {
+                    console.log('맵 로딩 진행률:', Math.round(progress.loaded / progress.total * 100) + '%');
+                },
+                (error) => {
+                    console.error('❌ 맵 로딩 실패:', error);
+                    reject(error);
+                }
+            );
+        });
+    }
+
+    // 7. 내 자동차 생성
+    async _createMyCar() {
+        try {
+            const myCar = new Car(this.scene, this.world, this.chassisMaterial);
+            await myCar.init();
+
+            // 내 자동차는 조작 가능하지만 초기에는 비활성화
+            myCar.isControllable = false;
+
+            // 자동차 맵에 추가
+            this.cars.set(this.playerId, myCar);
+
+            console.log('🚗 내 자동차 생성 완료:', this.playerId);
+        } catch (error) {
+            console.error('❌ 내 자동차 생성 실패:', error);
+            throw error;
+        }
+    }
+
+    // 8. 게임 루프 시작
+    _startGameLoop() {
+        const tick = () => {
+            if (this.stats) this.stats.begin();
+
+            // 물리 엔진 업데이트
+            this._updatePhysics();
+
+            // 모든 자동차 업데이트
+            this.cars.forEach((car) => {
+                car.update(this.camera);
+            });
+
+            // 내 자동차 상태 전송 (게임 시작 후)
+            if (this.isGameStarted) {
+                this._sendMyCarState();
+            }
+
+            // 렌더링
+            this.renderer.render(this.scene, this.camera);
+
+            if (this.stats) this.stats.end();
+
+            requestAnimationFrame(tick);
+        };
+
+        tick();
+        console.log('✅ 게임 루프 시작');
+    }
+
+    // 9. 이벤트 리스너 설정
+    _setupEventListeners() {
+        // 창 크기 변경
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 페이지 언로드 시 정리
+        window.addEventListener('beforeunload', () => {
+            if (this.socket) {
+                this.socket.disconnect();
+            }
+        });
+
+        console.log('✅ 이벤트 리스너 설정 완료');
+    }
+
+    // 10. 서버에 게임 참여 알림
+    _joinGameRoom() {
+        this.socket.emit('joinGame', {
+            roomId: this.roomId,
+            playerId: this.playerId,
+            nickname: this.nickname
+        });
+
+        console.log('📡 게임 룸 참여 요청 전송');
+    }
+
+    // 물리 엔진 업데이트
+    _updatePhysics() {
+        const time = performance.now() / 1000;
+        if (!this.lastCallTime) {
+            this.world.step(1 / 60);
+        } else {
+            const dt = time - this.lastCallTime;
+            this.world.step(1 / 60, dt);
+        }
+        this.lastCallTime = time;
+    }
+
+    // 내 자동차 상태 전송
+    _sendMyCarState() {
+        const myCar = this.cars.get(this.playerId);
+        if (!myCar || !myCar.car || !myCar.car.chassisBody) return;
+
+        const body = myCar.car.chassisBody;
+
+        // 50ms마다 전송 (20 FPS)
+        if (!this.lastSendTime || performance.now() - this.lastSendTime > 50) {
+            this.socket.emit('carUpdate', {
+                roomId: this.roomId,
+                playerId: this.playerId,
+                position: {
+                    x: body.position.x,
+                    y: body.position.y,
+                    z: body.position.z
+                },
+                quaternion: {
+                    x: body.quaternion.x,
+                    y: body.quaternion.y,
+                    z: body.quaternion.z,
+                    w: body.quaternion.w
+                },
+                velocity: {
+                    x: body.velocity.x,
+                    y: body.velocity.y,
+                    z: body.velocity.z
+                }
+            });
+
+            this.lastSendTime = performance.now();
+        }
+    }
+
+    // 기존 플레이어들 처리
+    async _handleExistingPlayers(players) {
+        console.log('👥 기존 플레이어들:', players);
+
+        if (!players || typeof players !== 'object') {
+            console.warn('⚠️ 잘못된 플레이어 데이터:', players);
+            return;
+        }
+
+        for (const [playerId, playerData] of Object.entries(players)) {
+            if (playerId !== this.playerId) {
+                // 중복 생성 방지
+                if (!this.cars.has(playerId)) {
+                    await this._createRemoteCar(playerId, playerData);
+                } else {
+                    console.log('🔄 이미 존재하는 플레이어:', playerId);
+                }
+            } else {
+                // 내 자동차 위치 업데이트
+                this._updateMyCarPosition(playerData);
+            }
+        }
+    }
+
+    // 새 플레이어 처리
+    async _handleNewPlayer(player) {
+        console.log('👤 새 플레이어 참여:', player);
+
+        if (player.playerId !== this.playerId) {
+            // 플레이어 데이터 구조 정규화
+            const playerData = {
+                playerId: player.playerId,
+                nickname: player.nickname,
+                position: player.position,
+                quaternion: player.quaternion,
+                velocity: player.velocity,
+                color: player.color
+            };
+            await this._createRemoteCar(player.playerId, playerData);
+        }
+    }
+
+    // 플레이어 퇴장 처리
+    _handlePlayerLeft(playerId) {
+        console.log('👋 플레이어 퇴장:', playerId);
+
+        const car = this.cars.get(playerId);
+        if (car) {
+            // 씬에서 자동차 제거
+            if (car.chassis) this.scene.remove(car.chassis);
+            if (car.wheels) {
+                car.wheels.forEach(wheel => this.scene.remove(wheel));
+            }
+
+            // 물리 월드에서 제거
+            if (car.car && car.car.chassisBody) {
+                this.world.removeBody(car.car.chassisBody);
+            }
+
+            // 맵에서 제거
+            this.cars.delete(playerId);
+        }
+    }
+
+    // 자동차 상태 업데이트 처리
+    _handleCarUpdate(data) {
+        const { playerId, position, quaternion, velocity } = data;
+
+        // 내 자동차는 업데이트하지 않음
+        if (playerId === this.playerId) return;
+
+        const car = this.cars.get(playerId);
+        if (car && car.car && car.car.chassisBody) {
+            const body = car.car.chassisBody;
+
+            // 위치와 회전 업데이트
+            body.position.set(position.x, position.y, position.z);
+            body.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+
+            // 속도 업데이트 (부드러운 움직임을 위해)
+            if (velocity) {
+                body.velocity.set(velocity.x, velocity.y, velocity.z);
+            }
+        }
+    }
+
+    // 원격 자동차 생성
+    async _createRemoteCar(playerId, playerData) {
+        try {
+            console.log('🔧 원격 자동차 생성 시작:', playerId, playerData);
+
+            const remoteCar = new Car(this.scene, this.world, this.chassisMaterial);
+            await remoteCar.init();
+
+            // 원격 자동차는 조작 불가능
+            remoteCar.isControllable = false;
+
+            // 초기 위치 설정
+            if (remoteCar.car && remoteCar.car.chassisBody && playerData && playerData.position) {
+                const body = remoteCar.car.chassisBody;
+                body.position.set(
+                    playerData.position.x || 0,
+                    playerData.position.y || 4,
+                    playerData.position.z || 0
+                );
+
+                if (playerData.quaternion) {
+                    body.quaternion.set(
+                        playerData.quaternion.x || 0,
+                        playerData.quaternion.y || 0,
+                        playerData.quaternion.z || 0,
+                        playerData.quaternion.w || 1
+                    );
+                }
+            }
+
+            // 색상 설정 (플레이어별 고유 색상)
+            if (remoteCar.chassis && remoteCar.chassis.material) {
+                const color = playerData && playerData.color ? playerData.color : 0x00ff00; // 기본 녹색
+                remoteCar.chassis.material.color.setHex(color);
+                console.log('🎨 자동차 색상 설정:', playerId, color.toString(16));
+            }
+
+            // 자동차 맵에 추가
+            this.cars.set(playerId, remoteCar);
+
+            console.log('🚙 원격 자동차 생성 완료:', playerId);
+        } catch (error) {
+            console.error('❌ 원격 자동차 생성 실패:', error, playerData);
+        }
+    }
+
+    // 내 자동차 위치 업데이트
+    _updateMyCarPosition(playerData) {
+        const myCar = this.cars.get(this.playerId);
+        if (myCar && myCar.car && myCar.car.chassisBody && playerData.position) {
+            const body = myCar.car.chassisBody;
+            body.position.set(
+                playerData.position.x,
+                playerData.position.y,
+                playerData.position.z
+            );
+
+            if (playerData.quaternion) {
+                body.quaternion.set(
+                    playerData.quaternion.x,
+                    playerData.quaternion.y,
+                    playerData.quaternion.z,
+                    playerData.quaternion.w
+                );
+            }
+
+            console.log('🔄 내 자동차 위치 업데이트:', playerData.position);
+        }
+    }
+
+    // 카운트다운 시작
+    _startCountdown() {
+        console.log('⏰ 카운트다운 시작');
+
+        const countdownElement = document.getElementById('countdown');
+        if (!countdownElement) return;
+
+        let count = 5;
+        countdownElement.style.display = 'block';
+        countdownElement.style.fontSize = '72px';
+        countdownElement.style.color = 'white';
+        countdownElement.style.textAlign = 'center';
+        countdownElement.style.position = 'fixed';
+        countdownElement.style.top = '50%';
+        countdownElement.style.left = '50%';
+        countdownElement.style.transform = 'translate(-50%, -50%)';
+        countdownElement.style.zIndex = '1000';
+
+        // 모든 자동차 조작 비활성화
+        this.cars.forEach((car) => {
+            car.isControllable = false;
+        });
+
+        const interval = setInterval(() => {
+            if (count > 0) {
+                countdownElement.innerText = count;
+                count--;
+            } else {
+                clearInterval(interval);
+                countdownElement.innerText = 'GO!';
+                setTimeout(() => {
+                    countdownElement.style.display = 'none';
+                }, 1000);
+            }
+        }, 1000);
+    }
+
+    // 게임 시작 처리
+    _handleGameStart() {
+        console.log('🏁 게임 시작!');
+
+        this.isGameStarted = true;
+
+        // 내 자동차만 조작 가능하게 설정
+        const myCar = this.cars.get(this.playerId);
+        if (myCar) {
+            myCar.isControllable = true;
+        }
+    }
 }
 
-tick()
+// 게임 시작
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const game = new MultiplayerCarGame();
+        await game.init();
+    } catch (error) {
+        console.error('❌ 게임 초기화 실패:', error);
+        alert('게임을 시작할 수 없습니다. 로비로 돌아갑니다.');
+        window.location.href = '/';
+    }
+});

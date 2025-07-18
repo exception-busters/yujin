@@ -6,6 +6,7 @@ export default class NetworkManager {
         this.socket = io();
         this.uiHandler = uiHandler;
         this.audioManager = audioManager;
+        this.currentNickname = null; // 현재 닉네임 저장
         this.setupSocketListeners();
     }
 
@@ -64,7 +65,14 @@ export default class NetworkManager {
             alert('게임이 곧 시작됩니다!');
             this.uiHandler.waitingRoomContainer.classList.add('hidden');
             this.uiHandler.mainMenuButtons.classList.remove('hidden');
-            window.location.href = 'game.html'; // 게임 시작 시 game.html로 이동
+
+            // 플레이어 정보 가져오기
+            const playerId = this.socket.id;
+            const nickname = this.uiHandler.nicknameElement ? this.uiHandler.nicknameElement.textContent : 'Player';
+
+            const url = `game.html?roomId=${roomId}&playerId=${playerId}&nickname=${encodeURIComponent(nickname)}`;
+            console.log('Redirecting to game with URL:', url);
+            window.location.href = url;
         });
 
         this.socket.on('gameEnded', (roomId) => {

@@ -153,7 +153,7 @@ export default class UIHandler {
 
     setupEventListeners() {
         console.log('🔧 UIHandler 이벤트 리스너 설정 시작');
-        
+
         // UI 요소가 존재하는 경우에만 이벤트 리스너 추가 (로비에서만)
         const startGameBtn = this.getById('start-game');
         if (startGameBtn) {
@@ -485,8 +485,17 @@ export default class UIHandler {
             this.notReadyModal.classList.remove('hidden');
         } else {
             console.log('All players are ready and current user is host. Starting game...');
-            window.location.href = 'game.html';
+
+            // 방장도 URL 파라미터와 함께 게임 페이지로 이동
+            const playerId = this.socket.id;
+            const nickname = this.nicknameElement ? this.nicknameElement.textContent : 'Host';
+            const roomId = this.currentRoomId;
+
+            const url = `game.html?roomId=${roomId}&playerId=${playerId}&nickname=${encodeURIComponent(nickname)}`;
+            console.log('Host redirecting to game with URL:', url);
+
             this.socket.emit('startGame', this.currentRoomId);
+            window.location.href = url;
         }
     }
 
@@ -768,7 +777,7 @@ export default class UIHandler {
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
         const scale = Math.min(windowWidth / designWidth, windowHeight / designHeight);
-        
+
         // 게임 viewport 스케일링 (게임 화면에서만)
         const viewport = this.getById('game-viewport');
         if (viewport) {
@@ -776,14 +785,14 @@ export default class UIHandler {
             viewport.style.width = `${designWidth}px`;
             viewport.style.height = `${designHeight}px`;
         }
-        
+
         // 로비 UI 스케일 컨테이너 스케일링 (로비에서만)
         const uiContainer = this.getById('ui-scale-container');
         if (uiContainer) {
             uiContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
             console.log(`📐 로비 UI 스케일링 적용: ${scale.toFixed(3)}x (${windowWidth}x${windowHeight})`);
         }
-        
+
         // 게임 UI 반응형 스케일링 (CSS 변수 사용)
         const gameCanvas = document.querySelector('canvas.webgl');
         if (gameCanvas) {
@@ -791,10 +800,10 @@ export default class UIHandler {
             const designWidth = 1920;
             const designHeight = 1080;
             const uiScale = Math.min(windowWidth / designWidth, windowHeight / designHeight);
-            
+
             // CSS 변수로 스케일 값 설정
             document.documentElement.style.setProperty('--ui-scale', uiScale);
-            
+
             console.log(`📐 게임 UI 반응형 스케일링 적용: ${uiScale.toFixed(3)}x (${windowWidth}x${windowHeight})`);
             console.log('🔍 모든 UI 요소가 브라우저 가장자리에 고정되면서 스케일링됩니다');
         }
