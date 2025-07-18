@@ -35,27 +35,55 @@ export default class AudioManager {
     }
 
     initializeAudio() {
-        this.lobbyBgm.volume = this.volumeSettings.lobbyBgm;
-        this.uiHandler.lobbyBgmVolumeSlider.value = this.volumeSettings.lobbyBgm;
-        this.uiHandler.lobbyBgmVolumeValue.textContent = this.volumeSettings.lobbyBgm.toFixed(2);
+        if (this.lobbyBgm) {
+            this.lobbyBgm.volume = this.volumeSettings.lobbyBgm;
 
-        this.lobbyBgm.play().catch(err => {
-            console.error('로비 BGM 재생 오류:', err);
-            document.addEventListener('click', () => {
-                this.lobbyBgm.play().catch(err => console.error('로비 BGM 재생 실패:', err));
-            }, { once: true });
-        });
-        console.log('로비 BGM 초기화 완료, 볼륨:', this.volumeSettings.lobbyBgm);
+            // UI 요소가 존재하는지 확인 후 설정
+            if (this.uiHandler && this.uiHandler.lobbyBgmVolumeSlider) {
+                this.uiHandler.lobbyBgmVolumeSlider.value = this.volumeSettings.lobbyBgm;
+            }
+            if (this.uiHandler && this.uiHandler.lobbyBgmVolumeValue) {
+                this.uiHandler.lobbyBgmVolumeValue.textContent = this.volumeSettings.lobbyBgm.toFixed(2);
+            }
+
+            // 로비 UI가 있는 경우에만 BGM 자동재생 시도 (게임 화면에서는 스킵)
+            if (this.uiHandler && this.uiHandler.lobbyBgmVolumeSlider) {
+                this.lobbyBgm.play().catch(err => {
+                    console.log('로비 BGM 자동재생 대기 중 (사용자 상호작용 필요)');
+                    document.addEventListener('click', () => {
+                        this.lobbyBgm.play().catch(err => console.error('로비 BGM 재생 실패:', err));
+                    }, { once: true });
+                });
+            }
+            console.log('로비 BGM 초기화 완료, 볼륨:', this.volumeSettings.lobbyBgm);
+        } else {
+            console.warn('Lobby BGM element not found.');
+        }
     }
 
     setupEventListeners() {
-        this.uiHandler.micSelect.addEventListener('change', this.handleMicSelectChange.bind(this));
-        this.uiHandler.micSensitivitySlider.addEventListener('input', this.handleMicSensitivityChange.bind(this));
-        this.uiHandler.micTestButton.addEventListener('click', this.handleMicTestButtonClick.bind(this));
-        this.uiHandler.closeMicTestWindowButton.addEventListener('click', this.handleCloseMicTestWindow.bind(this));
-        this.uiHandler.lobbyBgmVolumeSlider.addEventListener('input', this.handleLobbyBgmVolumeChange.bind(this));
-        this.uiHandler.noiseGateToggle.addEventListener('change', (e) => this.handleNoiseGateToggleChange(e.target.checked));
-        this.uiHandler.noiseGateIntensitySlider.addEventListener('input', (e) => this.handleNoiseGateIntensityChange(parseFloat(e.target.value)));
+        // UI 요소가 존재하는 경우에만 이벤트 리스너 추가 (로비에서만)
+        if (this.uiHandler && this.uiHandler.micSelect) {
+            this.uiHandler.micSelect.addEventListener('change', this.handleMicSelectChange.bind(this));
+        }
+        if (this.uiHandler && this.uiHandler.micSensitivitySlider) {
+            this.uiHandler.micSensitivitySlider.addEventListener('input', this.handleMicSensitivityChange.bind(this));
+        }
+        if (this.uiHandler && this.uiHandler.micTestButton) {
+            this.uiHandler.micTestButton.addEventListener('click', this.handleMicTestButtonClick.bind(this));
+        }
+        if (this.uiHandler && this.uiHandler.closeMicTestWindowButton) {
+            this.uiHandler.closeMicTestWindowButton.addEventListener('click', this.handleCloseMicTestWindow.bind(this));
+        }
+        if (this.uiHandler && this.uiHandler.lobbyBgmVolumeSlider) {
+            this.uiHandler.lobbyBgmVolumeSlider.addEventListener('input', this.handleLobbyBgmVolumeChange.bind(this));
+        }
+        if (this.uiHandler && this.uiHandler.noiseGateToggle) {
+            this.uiHandler.noiseGateToggle.addEventListener('change', (e) => this.handleNoiseGateToggleChange(e.target.checked));
+        }
+        if (this.uiHandler && this.uiHandler.noiseGateIntensitySlider) {
+            this.uiHandler.noiseGateIntensitySlider.addEventListener('input', (e) => this.handleNoiseGateIntensityChange(parseFloat(e.target.value)));
+        }
     }
 
     saveVolumeSettings() {
@@ -73,18 +101,36 @@ export default class AudioManager {
 
     async populateMicDevices() {
         try {
+            // UI 요소가 존재하는 경우에만 마이크 장치 목록 설정 (로비에서만)
+            if (!this.uiHandler || !this.uiHandler.micSelect) {
+                console.log('마이크 선택 UI가 없습니다. 게임 화면에서는 마이크 설정을 건너뜁니다.');
+                return;
+            }
+
             const devices = await navigator.mediaDevices.enumerateDevices();
             const audioInputs = devices.filter(device => device.kind === 'audioinput');
+
+            // 다시 한 번 UI 요소 존재 확인 (비동기 작업 후 상태 변경 가능성)
+            if (!this.uiHandler.micSelect) {
+                console.log('마이크 선택 UI가 제거되었습니다.');
+                return;
+            }
+
             this.uiHandler.micSelect.innerHTML = '<option value="">마이크 선택</option>';
             audioInputs.forEach(device => {
-                const option = document.createElement('option');
-                option.value = device.deviceId;
-                option.text = device.label || `마이크 ${this.uiHandler.micSelect.options.length + 1}`;
-                this.uiHandler.micSelect.appendChild(option);
+                if (this.uiHandler.micSelect) { // 각 반복에서도 안전 확인
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `마이크 ${this.uiHandler.micSelect.options.length + 1}`;
+                    this.uiHandler.micSelect.appendChild(option);
+                }
             });
         } catch (err) {
             console.error('마이크 장치 목록 가져오기 오류:', err);
-            alert('마이크 장치에 접근할 수 없습니다. 권한을 확인해주세요.');
+            // 게임 화면에서는 alert 표시하지 않음
+            if (this.uiHandler && this.uiHandler.micSelect) {
+                alert('마이크 장치에 접근할 수 없습니다. 권한을 확인해주세요.');
+            }
         }
     }
 

@@ -1,66 +1,33 @@
-// main.js
-import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
-import UIHandler from './UIHandler.js';
-import NetworkManager from './NetworkManager.js';
-import AudioManager from './AudioManager.js';
+// main.js - 리팩터링된 메인 진입점
+// AppManager가 모든 초기화를 담당합니다.
 
-document.addEventListener('DOMContentLoaded', initializeGame);
+console.log('📱 main.js 로드됨 - AppManager가 자동으로 환경을 감지하고 초기화합니다.');
 
-function initializeGame() {
-    const uiHandler = new UIHandler(null); // socket은 NetworkManager에서 주입
-    const audioManager = new AudioManager(uiHandler);
-    const networkManager = new NetworkManager(uiHandler, audioManager);
+// AppManager 임포트 (자동 초기화됨)
+import('./AppManager.js').then(() => {
+    console.log('✅ AppManager 모듈 로드 완료 - DOMContentLoaded에서 자동 초기화됩니다');
+}).catch(error => {
+    console.error('❌ AppManager 모듈 로드 실패:', error);
+});
 
-    uiHandler.socket = networkManager.socket;
-    uiHandler.audioManager = audioManager; // UIHandler에 audioManager 인스턴스 전달
-    uiHandler.initializeUI();
-    audioManager.populateMicDevices();
+// 개발자 도구에서 현재 환경 확인 가능
+window.getCurrentEnvironment = () => {
+    return window.appManager?.getCurrentEnvironment() || 'unknown';
+};
 
-    setupThreeJSScene();
-}
+window.getCurrentManager = () => {
+    return window.appManager?.getCurrentManager() || null;
+};
 
-function setupThreeJSScene() {
-    console.log('Cannon.js loaded:', CANNON);
-    if (CANNON.RaycastVehicle) {
-        console.log('RaycastVehicle is available.');
-    } else {
-        console.error('RaycastVehicle is not available in Cannon.js');
-    }
+// 디버깅용 정보 출력
+console.log('🔧 개발자 도구에서 사용 가능한 함수들:');
+console.log('- getCurrentEnvironment(): 현재 환경 확인');
+console.log('- getCurrentManager(): 현재 매니저 확인');
+console.log('- window.appManager: 전체 앱 매니저 접근');
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#bg') });
-
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    camera.position.z = 5;
-
-    const starGeometry = new THREE.BufferGeometry();
-    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02 });
-    const starVertices = [];
-    for (let i = 0; i < 10000; i++) {
-        const x = (Math.random() - 0.5) * 2000;
-        const y = (Math.random() - 0.5) * 2000;
-        const z = (Math.random() - 0.5) * 2000;
-        starVertices.push(x, y, z);
-    }
-    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-    const stars = new THREE.Points(starGeometry, starMaterial);
-    scene.add(stars);
-
-    function animate() {
-        requestAnimationFrame(animate);
-        stars.rotation.x += 0.0001;
-        stars.rotation.y += 0.0001;
-        renderer.render(scene, camera);
-    }
-    animate();
-
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-}
+// 초기화 완료 후 상태 확인
+setTimeout(() => {
+    console.log('🔍 AppManager 로드 상태 확인:', !!window.appManager);
+    console.log('🌍 현재 환경:', getCurrentEnvironment());
+    console.log('📋 현재 매니저:', getCurrentManager()?.constructor?.name || 'None');
+}, 1000);

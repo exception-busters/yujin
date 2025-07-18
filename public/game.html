@@ -18,17 +18,44 @@
     </script>
 </head>
 <body>
-    <div id="countdown"></div>
+    <audio id="countdown-beep" src="../assets/audio/countdown_beep.mp3" preload="auto"></audio>
+    <audio id="race-start" src="../assets/audio/race_start.mp3" preload="auto"></audio>
+    <audio id="lobby-bgm" src="../assets/audio/lobby_bgm.wav" preload="auto"></audio>
+    <audio id="hover-sound" src="../assets/audio/hover_sound.wav" preload="auto"></audio>
+    <audio id="click-sound" src="../assets/audio/click_sound.wav" preload="auto"></audio>
     <canvas class="webgl"></canvas>
 
-    <!-- In-Game UI Overlay -->
-    <div class="ingame-ui-overlay">
-        <div class="ui-panel rank-panel">Rank</div>
-        <div class="ui-panel lap-counter">Lap</div>
-        <div class="ui-panel minimap">Minimap</div>
-        <div class="ui-panel gauges-panel">Gauges</div>
+    <!-- 중앙 요소들 (스케일링 적용) -->
+    <div id="countdown"></div>
+    
+    <!-- 브라우저 가장자리에 직접 고정되는 UI 요소들 -->
+    <!-- 우하단 - 속도계 -->
+    <div id="speedometer">
+        <div id="speed-value">0</div>
+        <div id="speed-unit">km/h</div>
     </div>
+    
+    <!-- 우상단 - 랩 정보 -->
+    <div id="lap-info">
+        <span id="current-lap">1</span> / <span id="total-laps">3</span>
+    </div>
+    
+    <!-- 우상단 - 타이머 -->
+    <div id="timer">00:00</div>
+    
+    <!-- 좌측 중앙 - 순위 패널 -->
+    <div class="ui-panel rank-panel">Rank</div>
+    
+    <!-- 우상단 - 랩 카운터 -->
+    <div class="ui-panel lap-counter">Lap Counter</div>
+    
+    <!-- 우측 중앙 - 미니맵 -->
+    <div class="ui-panel minimap">Minimap</div>
+    
+    <!-- 우하단 - 게이지 패널 -->
+    <div class="ui-panel gauges-panel">Gauges</div>
 
+    <script type="module" src="../src/scripts/main.js"></script>
     <script type="module" src="../src/scripts/ingame.js"></script>
     <script type="module" src="../src/scripts/car.js"></script>
     <script src="https://unpkg.com/stats.js@0.17.0/build/stats.min.js"></script>

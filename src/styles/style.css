@@ -23,7 +23,8 @@
     text-shadow: 0 0 5px #0ff;
 }
 
-body, html {
+body,
+html {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -34,16 +35,40 @@ body, html {
     font-family: 'Orbitron', sans-serif;
 }
 
+/* 배경 캔버스 스타일 */
+#bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(135deg, #001122 0%, #003366 50%, #001122 100%);
+}
+
 #game-viewport {
-    position: absolute;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+#ui-scale-container {
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 1920px;
     height: 1080px;
     transform-origin: center center;
-    overflow: hidden;
+    z-index: 1000;
+    overflow: visible;
 }
+
+/* 게임 UI 컨테이너 제거 - 직접 브라우저에 배치 */
 
 #game-title-fixed {
     position: absolute;
@@ -57,15 +82,6 @@ body, html {
     margin: 0;
 }
 
-#bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-}
-
 #menu-container {
     position: absolute;
     top: 50%;
@@ -76,7 +92,10 @@ body, html {
     border-radius: 10px;
     text-align: center;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    z-index: 10;
+    z-index: 100;
+    pointer-events: auto;
+    width: 400px;
+    overflow: visible;
 }
 
 #menu-container h1 {
@@ -102,6 +121,9 @@ body, html {
     transition: all 0.3s ease;
     padding: 15px;
     text-align: center;
+    position: relative;
+    z-index: 101;
+    pointer-events: auto;
 }
 
 .btn:hover {
@@ -115,6 +137,7 @@ body, html {
     width: 250px;
     font-size: 1.2rem;
     margin: 15px auto;
+    padding: 15px;
 }
 
 .btn-secondary {
@@ -198,7 +221,7 @@ body, html {
 #multiplayer-options {
     position: absolute;
     top: 0;
-    left: calc(100% + 20px);
+    left: calc(85%);
     background-color: rgba(0, 0, 0, 0.9);
     border: 1px solid #0ff;
     padding: 10px;
@@ -206,11 +229,12 @@ body, html {
     display: flex;
     flex-direction: column;
     white-space: nowrap;
-    z-index: 10;
+    z-index: 1100;
+    min-width: 150px;
 }
 
 .modal-overlay {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -228,9 +252,12 @@ body, html {
 }
 
 #mic-test-window.modal-overlay {
-    background-color: transparent; /* 배경 덮개 제거 */
-    z-index: 1001; /* audio-settings-modal 위에 표시 */
-    pointer-events: none; /* 배경 클릭 차단 */
+    background-color: transparent;
+    /* 배경 덮개 제거 */
+    z-index: 1001;
+    /* audio-settings-modal 위에 표시 */
+    pointer-events: none;
+    /* 배경 클릭 차단 */
 }
 
 .modal-content {
@@ -281,33 +308,33 @@ body, html {
 }
 
 .form-group input[type="range"] {
-  width: 100%;
-  background: #333;
-  border: 1px solid #0ff;
-  border-radius: 5px;
-  cursor: pointer;
+    width: 100%;
+    background: #333;
+    border: 1px solid #0ff;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
 .form-group input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 15px;
-  height: 15px;
-  background: #0ff;
-  border-radius: 50%;
-  box-shadow: 0 0 5px #0ff;
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    background: #0ff;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #0ff;
 }
 
 .form-group input[type="range"]::-moz-range-thumb {
-  width: 15px;
-  height: 15px;
-  background: #0ff;
-  border-radius: 50%;
-  box-shadow: 0 0 5px #0ff;
+    width: 15px;
+    height: 15px;
+    background: #0ff;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #0ff;
 }
 
 .form-group label span {
-  color: #0ff;
-  font-weight: bold;
+    color: #0ff;
+    font-weight: bold;
 }
 
 
@@ -394,16 +421,19 @@ body, html {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    pointer-events: auto; /* 항상 클릭 가능 */
+    pointer-events: auto;
+    /* 항상 클릭 가능 */
 }
 
 .mic-test-content {
     width: 300px;
     position: absolute;
     top: 50%;
-    left: calc(50% + 220px); /* 오른쪽 배치 */
+    left: calc(50% + 220px);
+    /* 오른쪽 배치 */
     transform: translateY(-50%);
-    pointer-events: auto; /* 내부 요소 클릭 가능 */
+    pointer-events: auto;
+    /* 내부 요소 클릭 가능 */
 }
 
 .power-bar-group {
@@ -523,7 +553,8 @@ body, html {
     grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
 }
 
-.player-slot, .team-slot {
+.player-slot,
+.team-slot {
     background-color: rgba(0, 50, 80, 0.7);
     border: 1px solid #0aa;
     border-radius: 10px;
@@ -832,44 +863,64 @@ body, html {
     box-shadow: 0 0 15px #888;
 }
 
+/* 우하단 - 속도계 (브라우저 가장자리 직접 고정 + 반응형) */
 #speedometer {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 150px;
-    height: 75px;
+    position: fixed;
+    bottom: 2vh;
+    right: 1vw;
+    transform: scale(var(--ui-scale, 1));
+    transform-origin: right bottom;
+    width: 10vw;
+    min-width: 120px;
+    max-width: 150px;
+    height: 8vh;
+    min-height: 60px;
+    max-height: 80px;
     background-color: rgba(0, 0, 0, 0.5);
     border: 2px solid #0ff;
     border-radius: 10px;
     color: #fff;
     font-family: 'Orbitron', sans-serif;
     text-align: center;
-    padding: 10px;
+    padding: 1vh 1vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
 #speed-value {
-    font-size: 2.5rem;
+    font-size: clamp(1.5rem, 2.5vw, 2.5rem);
     font-weight: bold;
     color: #0ff;
+    line-height: 1;
 }
 
 #speed-unit {
-    font-size: 1rem;
+    font-size: clamp(0.8rem, 1.2vw, 1rem);
     color: #ccc;
+    line-height: 1;
 }
 
+/* 우상단 - 랩 정보 (브라우저 가장자리 직접 고정 + 반응형) */
 #lap-info {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+    position: fixed;
+    top: 2vh;
+    right: 1vw;
+    transform: scale(var(--ui-scale, 1));
+    transform-origin: right top;
     background-color: rgba(0, 0, 0, 0.5);
     border: 2px solid #0ff;
     border-radius: 10px;
-    padding: 10px 15px;
+    padding: 1vh 1.5vw;
     color: #fff;
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.2rem;
+    font-size: clamp(1rem, 1.5vw, 1.2rem);
     text-align: center;
+    min-width: 80px;
+    max-width: 120px;
+    z-index: 1000;
 }
 
 #current-lap {
@@ -881,18 +932,24 @@ body, html {
     color: #ccc;
 }
 
+/* 우상단 - 타이머 (브라우저 가장자리 직접 고정 + 반응형) */
 #timer {
-    position: absolute;
-    top: 70px;
-    right: 20px;
+    position: fixed;
+    top: 8vh;
+    right: 1vw;
+    transform: scale(var(--ui-scale, 1));
+    transform-origin: right top;
     background-color: rgba(0, 0, 0, 0.5);
     border: 2px solid #0ff;
     border-radius: 10px;
-    padding: 10px 15px;
+    padding: 1vh 1.5vw;
     color: #fff;
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.5rem;
+    font-size: clamp(1.2rem, 1.8vw, 1.5rem);
     text-align: center;
+    min-width: 100px;
+    max-width: 140px;
+    z-index: 1000;
 }
 
 #game-over-modal {
@@ -953,7 +1010,7 @@ body, html {
     font-size: 20rem;
     color: white;
     text-shadow: 0 0 20px black;
-    z-index: 1000;
+    z-index: 100;
     display: none;
     font-family: 'Orbitron', sans-serif;
 }
@@ -976,7 +1033,7 @@ body, html {
 
 .ui-panel {
     position: absolute;
-    background-color: rgba(0, 20, 40, 0.75);
+    background-color: rgba(0, 20, 40, 0.9);
     border: 2px solid #0ff;
     border-radius: 10px;
     box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
@@ -986,36 +1043,83 @@ body, html {
     justify-content: center;
     align-items: center;
     font-size: 1.2rem;
+    pointer-events: auto;
+    /* 디버깅용 - 더 진한 배경 */
 }
 
+/* 좌측 중앙 - 순위 패널 (브라우저 가장자리 직접 고정 + 반응형) */
 .rank-panel {
+    position: fixed;
     top: 50%;
-    left: 20px;
-    width: 200px;
-    height: 600px;
-    transform: translateY(-50%);
+    left: 1vw;
+    transform: translateY(-50%) scale(var(--ui-scale, 1));
+    transform-origin: left center;
+    width: 12vw;
+    min-width: 150px;
+    max-width: 200px;
+    height: 35vh;
+    min-height: 300px;
+    max-height: 400px;
+    z-index: 1000;
 }
 
+/* 우상단 - 랩 카운터 (브라우저 가장자리 직접 고정 + 반응형) */
 .lap-counter {
-    top: 20px;
-    right: 20px;
-    width: 150px;
-    height: 80px;
+    position: fixed;
+    top: 25vh;
+    right: 1vw;
+    transform: scale(var(--ui-scale, 1));
+    transform-origin: right top;
+    width: 10vw;
+    min-width: 120px;
+    max-width: 150px;
+    height: 6vh;
+    min-height: 50px;
+    max-height: 70px;
+    z-index: 1000;
 }
 
+/* 우측 중앙 - 미니맵 (브라우저 가장자리 직접 고정 + 반응형) */
 .minimap {
-    top: 40%;
-    right: 20px;
-    width: 300px;
-    height: 250px;
+    position: fixed;
+    top: 50%;
+    right: 1vw;
+    transform: translateY(-50%) scale(var(--ui-scale, 1));
+    transform-origin: right center;
+    width: 15vw;
+    min-width: 200px;
+    max-width: 250px;
+    height: 20vh;
+    min-height: 150px;
+    max-height: 200px;
     background-color: rgba(128, 128, 128, 0.5);
-    border: none;
-    box-shadow: none;
+    border: 2px solid #0ff;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    z-index: 1000;
 }
 
+/* 우하단 - 게이지 패널 (브라우저 가장자리 직접 고정 + 반응형) */
 .gauges-panel {
-    bottom: 20px;
-    right: 20px;
-    width: 350px;
-    height: 150px;
+    position: fixed;
+    bottom: 15vh;
+    right: 1vw;
+    transform: scale(var(--ui-scale, 1));
+    transform-origin: right bottom;
+    width: 20vw;
+    min-width: 200px;
+    max-width: 300px;
+    height: 200vh;
+    min-height: 80px;
+    max-height: 200px;
+    z-index: 1000;
+}
+
+/* Stats 패널 스케일링 */
+#stats-panel {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: scale(var(--ui-scale, 1)) !important;
+    transform-origin: top left !important;
+    z-index: 10000 !important;
 }

@@ -19,46 +19,51 @@
     <source src="../assets/audio/click_sound.wav" type="audio/wav">
     Your browser does not support the audio element.
   </audio>
-    <div id="game-viewport">
+    <!-- 모든 UI 요소를 하나의 스케일링 컨테이너로 묶기 -->
+    <div id="ui-scale-container">
         <h1 id="game-title-fixed">3D Racing Game</h1>
         <div id="profile-container">
             <img id="profile-picture" src="../assets/default_Profile.png" alt="Profile Picture">
             <div id="nickname"></div>
         </div>
         <div id="menu-container">
-            <h2 id="current-menu-title" class="hidden"></h2>
-            <div id="main-menu-buttons" class="menu-buttons">
-                <button id="start-game" class="btn btn-primary">Start Game</button>
-                <button id="option" class="btn btn-primary">Option</button>
-                <button id="garage" class="btn btn-primary">Garage</button> 
-                <button id="store" class="btn btn-primary">Store</button>
-                <button id="contact" class="btn btn-primary">Contact us</button>
-            </div>
-
-            <div id="training-multi-menu" class="menu-buttons hidden">
-                <button id="training-button" class="btn btn-primary">Training</button>
-                <div class="multi-button-wrapper">
-                    <button id="multi-button" class="btn btn-primary">Multi</button>
-                    <div id="multiplayer-options" class="hidden">
-                        <button id="create-room-button" class="btn btn-secondary">Create Room</button>
-                        <button id="join-room-button" class="btn btn-secondary">Join Room</button>
-                    </div>
-                </div>
-                <button id="back-to-main-menu" class="btn btn-small">Back</button>
-            </div>
-
-            <div id="option-menu" class="menu-buttons hidden">
-                <button id="audio-button" class="btn btn-primary">Audio</button>
-                <button id="graphic-button" class="btn btn-primary">Graphic</button>
-                <div id="graphic-settings" class="menu-buttons hidden">
-                    <label><input type="radio" name="graphic-quality" value="low"> Low</label>
-                    <label><input type="radio" name="graphic-quality" value="medium"> Medium</label>
-                    <label><input type="radio" name="graphic-quality" value="high"> High</label>
-                </div>
-                <button id="general-button" class="btn btn-primary">General</button>
-                <button id="back-to-main-menu-from-option" class="btn btn-small">Back</button>
-            </div>
+        <h2 id="current-menu-title" class="hidden"></h2>
+        <div id="main-menu-buttons" class="menu-buttons">
+            <button id="start-game" class="btn btn-primary">Start Game</button>
+            <button id="option" class="btn btn-primary">Option</button>
+            <button id="garage" class="btn btn-primary">Garage</button> 
+            <button id="store" class="btn btn-primary">Store</button>
+            <button id="contact" class="btn btn-primary">Contact us</button>
         </div>
+
+        <div id="training-multi-menu" class="menu-buttons hidden">
+            <button id="training-button" class="btn btn-primary">Training</button>
+            <div class="multi-button-wrapper">
+                <button id="multi-button" class="btn btn-primary">Multi</button>
+                <div id="multiplayer-options" class="hidden">
+                    <button id="create-room-button" class="btn btn-secondary">Create Room</button>
+                    <button id="join-room-button" class="btn btn-secondary">Join Room</button>
+                </div>
+            </div>
+            <button id="back-to-main-menu" class="btn btn-small">Back</button>
+        </div>
+
+        <div id="option-menu" class="menu-buttons hidden">
+            <button id="audio-button" class="btn btn-primary">Audio</button>
+            <button id="graphic-button" class="btn btn-primary">Graphic</button>
+            <div id="graphic-settings" class="menu-buttons hidden">
+                <label><input type="radio" name="graphic-quality" value="low"> Low</label>
+                <label><input type="radio" name="graphic-quality" value="medium"> Medium</label>
+                <label><input type="radio" name="graphic-quality" value="high"> High</label>
+            </div>
+            <button id="general-button" class="btn btn-primary">General</button>
+            <button id="back-to-main-menu-from-option" class="btn btn-small">Back</button>
+        </div>
+    </div>
+
+    <div id="game-viewport">
+        <!-- 게임 화면에서만 사용되는 캔버스가 여기에 들어갑니다 -->
+    </div>
 
         <!-- Create Room Modal -->
         <div id="create-room-modal" class="modal-overlay hidden">

@@ -108,22 +108,35 @@ export default class UIHandler {
     initializeUI() {
         this.generateRandomNickname();
         this.setupEventListeners();
-        this.selectedMapDisplay.textContent = 'No map selected';
+
+        // UI 요소가 존재하는 경우에만 설정 (로비에서만)
+        if (this.selectedMapDisplay) {
+            this.selectedMapDisplay.textContent = 'No map selected';
+        }
+
         this.resizeGameViewport();
         window.addEventListener('resize', this.resizeGameViewport.bind(this));
 
-        // 노이즈 게이트 초기 상태 설정
-        this.noiseGateToggle.checked = localStorage.getItem('noiseGateEnabled') === 'true';
-        this.noiseGateIntensitySlider.value = localStorage.getItem('noiseGateIntensity') || -45;
-        this.noiseGateIntensityValue.textContent = `${this.noiseGateIntensitySlider.value} dB`;
+        // 노이즈 게이트 초기 상태 설정 (UI 요소가 존재하는 경우에만)
+        if (this.noiseGateToggle) {
+            this.noiseGateToggle.checked = localStorage.getItem('noiseGateEnabled') === 'true';
+        }
+        if (this.noiseGateIntensitySlider) {
+            this.noiseGateIntensitySlider.value = localStorage.getItem('noiseGateIntensity') || -45;
+        }
+        if (this.noiseGateIntensityValue) {
+            this.noiseGateIntensityValue.textContent = `${this.noiseGateIntensitySlider?.value || -45} dB`;
+        }
 
-        // 그래픽 품질 초기 상태 설정
-        const savedQuality = localStorage.getItem('graphicQuality') || 'medium';
-        this.graphicQualityRadios.forEach(radio => {
-            if (radio.value === savedQuality) {
-                radio.checked = true;
-            }
-        });
+        // 그래픽 품질 초기 상태 설정 (UI 요소가 존재하는 경우에만)
+        if (this.graphicQualityRadios && this.graphicQualityRadios.length > 0) {
+            const savedQuality = localStorage.getItem('graphicQuality') || 'medium';
+            this.graphicQualityRadios.forEach(radio => {
+                if (radio.value === savedQuality) {
+                    radio.checked = true;
+                }
+            });
+        }
     }
 
     generateRandomNickname() {
@@ -131,81 +144,184 @@ export default class UIHandler {
         const nouns = ['Lion', 'Tiger', 'Eagle', 'Shark', 'Wolf'];
         const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
         const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-        this.nicknameElement.textContent = `${randomAdjective}${randomNoun}`;
+
+        // 닉네임 요소가 존재하는 경우에만 설정 (로비에서만)
+        if (this.nicknameElement) {
+            this.nicknameElement.textContent = `${randomAdjective}${randomNoun}`;
+        }
     }
 
     setupEventListeners() {
-        this.getById('start-game').addEventListener('click', this.handleStartGameClick.bind(this));
-        this.getById('training-button').addEventListener('click', this.handleTrainingClick.bind(this));
-        this.getById('multi-button').addEventListener('click', this.handleMultiClick.bind(this));
-        this.getById('create-room-button').addEventListener('click', this.handleCreateRoomClick.bind(this));
-        this.getById('join-room-button').addEventListener('click', this.handleJoinRoomClick.bind(this));
-        this.getById('back-to-main-menu').addEventListener('click', this.handleBackToMainMenuClick.bind(this));
-        this.privateRoomCheckbox.addEventListener('change', this.handlePrivateRoomChange.bind(this));
-        this.mapSelectButton.addEventListener('click', this.handleMapSelectClick.bind(this));
-        this.mapOptionItems.forEach(item => item.addEventListener('click', this.handleMapOptionClick.bind(this)));
+        console.log('🔧 UIHandler 이벤트 리스너 설정 시작');
+        
+        // UI 요소가 존재하는 경우에만 이벤트 리스너 추가 (로비에서만)
+        const startGameBtn = this.getById('start-game');
+        if (startGameBtn) {
+            startGameBtn.addEventListener('click', this.handleStartGameClick.bind(this));
+            console.log('✅ Start Game 버튼 이벤트 리스너 설정 완료');
+        } else {
+            console.log('❌ Start Game 버튼을 찾을 수 없음');
+        }
+
+        const trainingBtn = this.getById('training-button');
+        if (trainingBtn) trainingBtn.addEventListener('click', this.handleTrainingClick.bind(this));
+
+        const multiBtn = this.getById('multi-button');
+        if (multiBtn) multiBtn.addEventListener('click', this.handleMultiClick.bind(this));
+
+        const createRoomBtn = this.getById('create-room-button');
+        if (createRoomBtn) createRoomBtn.addEventListener('click', this.handleCreateRoomClick.bind(this));
+
+        const joinRoomBtn = this.getById('join-room-button');
+        if (joinRoomBtn) joinRoomBtn.addEventListener('click', this.handleJoinRoomClick.bind(this));
+
+        const backToMainBtn = this.getById('back-to-main-menu');
+        if (backToMainBtn) backToMainBtn.addEventListener('click', this.handleBackToMainMenuClick.bind(this));
+
+        if (this.privateRoomCheckbox) {
+            this.privateRoomCheckbox.addEventListener('change', this.handlePrivateRoomChange.bind(this));
+        }
+
+        if (this.mapSelectButton) {
+            this.mapSelectButton.addEventListener('click', this.handleMapSelectClick.bind(this));
+        }
+
+        if (this.mapOptionItems && this.mapOptionItems.length > 0) {
+            this.mapOptionItems.forEach(item => item.addEventListener('click', this.handleMapOptionClick.bind(this)));
+        }
         document.addEventListener('click', this.handleDocumentClick.bind(this));
-        this.createRoomFinalButton.addEventListener('click', this.handleCreateRoomFinalClick.bind(this));
-        this.closeCreateRoomModalButton.addEventListener('click', this.handleCloseCreateRoomModalClick.bind(this));
-        this.readyButton.addEventListener('click', this.handleReadyButtonClick.bind(this));
-        this.leaveRoomButton.addEventListener('click', this.handleLeaveRoomClick.bind(this));
-        this.startButton.addEventListener('click', this.handleStartButtonClick.bind(this));
-        this.notReadyOkButton.addEventListener('click', this.handleNotReadyOkClick.bind(this));
-        this.mapNotSelectedOkButton.addEventListener('click', this.handleMapNotSelectedOkClick.bind(this));
-        this.passwordNotEnteredOkButton.addEventListener('click', this.handlePasswordNotEnteredOkClick.bind(this));
-        this.roomSettingsButton.addEventListener('click', this.handleRoomSettingsClick.bind(this));
-        this.playerList.addEventListener('click', this.handlePlayerListClick.bind(this));
-        this.closeJoinRoomModalButton.addEventListener('click', this.handleCloseJoinRoomModalClick.bind(this));
-        this.refreshRoomListButton.addEventListener('click', this.handleRefreshRoomListClick.bind(this));
-        this.joinSelectedRoomButton.addEventListener('click', this.handleJoinSelectedRoomClick.bind(this));
-        this.roomListContainer.addEventListener('click', this.handleRoomListItemClick.bind(this));
-        this.roomListContainer.addEventListener('dblclick', this.handleRoomListItemDoubleClick.bind(this));
-        this.incorrectPasswordOkButton.addEventListener('click', () => this.incorrectPasswordModal.classList.add('hidden'));
-        this.closePrivateRoomPasswordModalButton.addEventListener('click', () => {
-            this.privateRoomPasswordModal.classList.add('hidden');
-            this.privateRoomPasswordInput.value = '';
-        });
-        this.privateRoomPasswordOkButton.addEventListener('click', this.handlePrivateRoomPasswordOkClick.bind(this));
 
-        // Option Menu Event Listeners
-        this.getById('option').addEventListener('click', this.handleOptionClick.bind(this));
-        this.getById('back-to-main-menu-from-option').addEventListener('click', this.handleBackToMainMenuClick.bind(this));
-        this.audioButton.addEventListener('click', this.handleAudioButtonClick.bind(this));
-        this.closeAudioSettingsModalButton.addEventListener('click', this.handleCloseAudioSettingsModal.bind(this));
-        this.micSelect.addEventListener('change', this.handleMicSelectChange.bind(this));
-        this.micSensitivitySlider.addEventListener('input', this.handleMicSensitivityChange.bind(this));
-        this.closeMicTestWindowButton.addEventListener('click', this.handleCloseMicTestWindow.bind(this));
-        this.lobbyBgmVolumeSlider.addEventListener('input', this.handleLobbyBgmVolumeChange.bind(this));
-        this.noiseGateToggle.addEventListener('change', this.handleNoiseGateToggleChange.bind(this));
-        this.noiseGateIntensitySlider.addEventListener('input', this.handleNoiseGateIntensityChange.bind(this));
-        this.graphicButton.addEventListener('click', this.handleGraphicButtonClick.bind(this));
-        this.graphicQualityRadios.forEach(radio => {
-            radio.addEventListener('change', this.handleGraphicQualityChange.bind(this));
-        });
+        if (this.createRoomFinalButton) {
+            this.createRoomFinalButton.addEventListener('click', this.handleCreateRoomFinalClick.bind(this));
+        }
+        if (this.closeCreateRoomModalButton) {
+            this.closeCreateRoomModalButton.addEventListener('click', this.handleCloseCreateRoomModalClick.bind(this));
+        }
+        if (this.readyButton) {
+            this.readyButton.addEventListener('click', this.handleReadyButtonClick.bind(this));
+        }
+        if (this.leaveRoomButton) {
+            this.leaveRoomButton.addEventListener('click', this.handleLeaveRoomClick.bind(this));
+        }
+        if (this.startButton) {
+            this.startButton.addEventListener('click', this.handleStartButtonClick.bind(this));
+        }
+        if (this.notReadyOkButton) {
+            this.notReadyOkButton.addEventListener('click', this.handleNotReadyOkClick.bind(this));
+        }
+        if (this.mapNotSelectedOkButton) {
+            this.mapNotSelectedOkButton.addEventListener('click', this.handleMapNotSelectedOkClick.bind(this));
+        }
+        if (this.passwordNotEnteredOkButton) {
+            this.passwordNotEnteredOkButton.addEventListener('click', this.handlePasswordNotEnteredOkClick.bind(this));
+        }
+        if (this.roomSettingsButton) {
+            this.roomSettingsButton.addEventListener('click', this.handleRoomSettingsClick.bind(this));
+        }
+        if (this.playerList) {
+            this.playerList.addEventListener('click', this.handlePlayerListClick.bind(this));
+        }
+        if (this.closeJoinRoomModalButton) {
+            this.closeJoinRoomModalButton.addEventListener('click', this.handleCloseJoinRoomModalClick.bind(this));
+        }
+        if (this.refreshRoomListButton) {
+            this.refreshRoomListButton.addEventListener('click', this.handleRefreshRoomListClick.bind(this));
+        }
+        if (this.joinSelectedRoomButton) {
+            this.joinSelectedRoomButton.addEventListener('click', this.handleJoinSelectedRoomClick.bind(this));
+        }
+        if (this.roomListContainer) {
+            this.roomListContainer.addEventListener('click', this.handleRoomListItemClick.bind(this));
+            this.roomListContainer.addEventListener('dblclick', this.handleRoomListItemDoubleClick.bind(this));
+        }
+        if (this.incorrectPasswordOkButton) {
+            this.incorrectPasswordOkButton.addEventListener('click', () => this.incorrectPasswordModal.classList.add('hidden'));
+        }
+        if (this.closePrivateRoomPasswordModalButton) {
+            this.closePrivateRoomPasswordModalButton.addEventListener('click', () => {
+                this.privateRoomPasswordModal.classList.add('hidden');
+                this.privateRoomPasswordInput.value = '';
+            });
+        }
+        if (this.privateRoomPasswordOkButton) {
+            this.privateRoomPasswordOkButton.addEventListener('click', this.handlePrivateRoomPasswordOkClick.bind(this));
+        }
 
-        // Add hover sound to main menu buttons
-        this.mainMenuButtonsList.forEach(button => {
-            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
-        });
+        // Option Menu Event Listeners (게임 화면에서는 존재하지 않을 수 있음)
+        const optionBtn = this.getById('option');
+        if (optionBtn) optionBtn.addEventListener('click', this.handleOptionClick.bind(this));
 
-        // Add hover sound to other button groups
-        this.trainingMultiButtons.forEach(button => {
-            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
-        });
-        this.optionMenuButtons.forEach(button => {
-            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
-        });
-        this.waitingRoomButtons.forEach(button => {
-            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
-        });
-        this.modalButtons.forEach(button => {
-            button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
-        });
+        const backToMainFromOptionBtn = this.getById('back-to-main-menu-from-option');
+        if (backToMainFromOptionBtn) backToMainFromOptionBtn.addEventListener('click', this.handleBackToMainMenuClick.bind(this));
 
-        // Add click sound to all clickable elements
-        this.allClickableElements.forEach(element => {
-            element.addEventListener('click', () => this.audioManager.playClickSound());
-        });
+        if (this.audioButton) {
+            this.audioButton.addEventListener('click', this.handleAudioButtonClick.bind(this));
+        }
+        if (this.closeAudioSettingsModalButton) {
+            this.closeAudioSettingsModalButton.addEventListener('click', this.handleCloseAudioSettingsModal.bind(this));
+        }
+        if (this.micSelect) {
+            this.micSelect.addEventListener('change', this.handleMicSelectChange.bind(this));
+        }
+        if (this.micSensitivitySlider) {
+            this.micSensitivitySlider.addEventListener('input', this.handleMicSensitivityChange.bind(this));
+        }
+        if (this.closeMicTestWindowButton) {
+            this.closeMicTestWindowButton.addEventListener('click', this.handleCloseMicTestWindow.bind(this));
+        }
+        if (this.lobbyBgmVolumeSlider) {
+            this.lobbyBgmVolumeSlider.addEventListener('input', this.handleLobbyBgmVolumeChange.bind(this));
+        }
+        if (this.noiseGateToggle) {
+            this.noiseGateToggle.addEventListener('change', this.handleNoiseGateToggleChange.bind(this));
+        }
+        if (this.noiseGateIntensitySlider) {
+            this.noiseGateIntensitySlider.addEventListener('input', this.handleNoiseGateIntensityChange.bind(this));
+        }
+        if (this.graphicButton) {
+            this.graphicButton.addEventListener('click', this.handleGraphicButtonClick.bind(this));
+        }
+        if (this.graphicQualityRadios && this.graphicQualityRadios.length > 0) {
+            this.graphicQualityRadios.forEach(radio => {
+                radio.addEventListener('change', this.handleGraphicQualityChange.bind(this));
+            });
+        }
+
+        // Add hover sound to main menu buttons (게임 화면에서는 존재하지 않을 수 있음)
+        if (this.mainMenuButtonsList && this.mainMenuButtonsList.length > 0) {
+            this.mainMenuButtonsList.forEach(button => {
+                button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+            });
+        }
+
+        // Add hover sound to other button groups (게임 화면에서는 존재하지 않을 수 있음)
+        if (this.trainingMultiButtons && this.trainingMultiButtons.length > 0) {
+            this.trainingMultiButtons.forEach(button => {
+                button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+            });
+        }
+        if (this.optionMenuButtons && this.optionMenuButtons.length > 0) {
+            this.optionMenuButtons.forEach(button => {
+                button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+            });
+        }
+        if (this.waitingRoomButtons && this.waitingRoomButtons.length > 0) {
+            this.waitingRoomButtons.forEach(button => {
+                button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+            });
+        }
+        if (this.modalButtons && this.modalButtons.length > 0) {
+            this.modalButtons.forEach(button => {
+                button.addEventListener('mouseover', () => this.audioManager.playHoverSound());
+            });
+        }
+
+        // Add click sound to all clickable elements (게임 화면에서는 존재하지 않을 수 있음)
+        if (this.allClickableElements && this.allClickableElements.length > 0) {
+            this.allClickableElements.forEach(element => {
+                element.addEventListener('click', () => this.audioManager.playClickSound());
+            });
+        }
     }
 
     getById(id) {
@@ -278,8 +394,11 @@ export default class UIHandler {
     }
 
     handleDocumentClick(event) {
-        if (!this.mapSelectButton.contains(event.target) && !this.mapOptions.contains(event.target)) {
-            this.mapOptions.classList.add('hidden');
+        // 게임 화면에서는 mapSelectButton과 mapOptions가 존재하지 않을 수 있음
+        if (this.mapSelectButton && this.mapOptions) {
+            if (!this.mapSelectButton.contains(event.target) && !this.mapOptions.contains(event.target)) {
+                this.mapOptions.classList.add('hidden');
+            }
         }
     }
 
@@ -644,14 +763,40 @@ export default class UIHandler {
     }
 
     resizeGameViewport() {
-        const viewport = this.getById('game-viewport');
         const designWidth = 1920;
         const designHeight = 1080;
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
         const scale = Math.min(windowWidth / designWidth, windowHeight / designHeight);
-        viewport.style.transform = `translate(-50%, -50%) scale(${scale})`;
-        viewport.style.width = `${designWidth}px`;
-        viewport.style.height = `${designHeight}px`;
+        
+        // 게임 viewport 스케일링 (게임 화면에서만)
+        const viewport = this.getById('game-viewport');
+        if (viewport) {
+            viewport.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            viewport.style.width = `${designWidth}px`;
+            viewport.style.height = `${designHeight}px`;
+        }
+        
+        // 로비 UI 스케일 컨테이너 스케일링 (로비에서만)
+        const uiContainer = this.getById('ui-scale-container');
+        if (uiContainer) {
+            uiContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            console.log(`📐 로비 UI 스케일링 적용: ${scale.toFixed(3)}x (${windowWidth}x${windowHeight})`);
+        }
+        
+        // 게임 UI 반응형 스케일링 (CSS 변수 사용)
+        const gameCanvas = document.querySelector('canvas.webgl');
+        if (gameCanvas) {
+            // 1920x1080 기준으로 스케일 계산
+            const designWidth = 1920;
+            const designHeight = 1080;
+            const uiScale = Math.min(windowWidth / designWidth, windowHeight / designHeight);
+            
+            // CSS 변수로 스케일 값 설정
+            document.documentElement.style.setProperty('--ui-scale', uiScale);
+            
+            console.log(`📐 게임 UI 반응형 스케일링 적용: ${uiScale.toFixed(3)}x (${windowWidth}x${windowHeight})`);
+            console.log('🔍 모든 UI 요소가 브라우저 가장자리에 고정되면서 스케일링됩니다');
+        }
     }
 }
